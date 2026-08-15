@@ -1,4 +1,3 @@
-/* 2026-08-15 (gemini-2.5-pro) */
 :root {
     --bg-dark: #0f111a;
     --bg-panel: #1a1d27;
@@ -35,6 +34,8 @@ body {
     display: flex;
     width: 100%;
     height: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -145,6 +146,105 @@ textarea:focus, input:focus {
 }
 .dot.connected { background-color: #10b981; }
 
+/* File Explorer */
+.file-explorer {
+    width: 250px;
+    background-color: #151821;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.explorer-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.explorer-header h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: white;
+}
+
+.explorer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0;
+}
+
+.file-tree {
+    list-style: none;
+}
+
+.file-tree li {
+    margin: 0;
+    padding: 0;
+}
+
+.tree-item {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 1.5rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    transition: background-color 0.1s;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tree-icon {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.tree-children {
+    display: none;
+    list-style: none;
+    padding-left: 1.25rem;
+}
+
+.tree-children.open {
+    display: block;
+}
+
+/* Sidebar Resizer */
+.resizer {
+    width: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    cursor: ew-resize;
+    z-index: 10;
+    transition: background-color 0.2s;
+}
+
+.resizer:hover, .resizer.resizing {
+    background-color: var(--accent);
+}
+
 /* Terminal Area */
 .terminal-container {
     flex: 1;
@@ -152,6 +252,10 @@ textarea:focus, input:focus {
     flex-direction: column;
     padding: 2rem;
     background-color: var(--bg-dark);
+    /* smooth resize when sider opens */
+    transition: margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+    overflow: hidden;
 }
 
 .terminal-header {
@@ -294,4 +398,161 @@ textarea:focus, input:focus {
 
 .modal-body {
     padding: 1.5rem;
+}
+
+/* Chat Assistant Styles */
+.chat-message-assistant {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.chat-message-user {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.chat-bubble {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.chat-message-assistant .chat-bubble {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    border-bottom-left-radius: 2px;
+}
+
+.chat-message-user .chat-bubble {
+    background-color: var(--accent);
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+
+/* Markdown styling in chat bubble */
+.chat-bubble p { margin-bottom: 0.5rem; margin-top: 0; }
+.chat-bubble p:last-child { margin-bottom: 0; }
+.chat-bubble pre { background: rgba(0,0,0,0.5); padding: 0.5rem; border-radius: 4px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; margin-bottom: 0.5rem; }
+.chat-bubble code { background: rgba(0,0,0,0.3); padding: 0.1rem 0.3rem; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #a855f7; }
+.chat-bubble ul, .chat-bubble ol { margin-top: 0; margin-bottom: 0.5rem; padding-left: 1.5rem; }
+.chat-bubble table { border-collapse: collapse; width: 100%; margin-bottom: 0.5rem; font-size: 0.8rem; }
+.chat-bubble th, .chat-bubble td { border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.5rem; }
+.chat-bubble th { background: rgba(255,255,255,0.05); }
+
+/* Collapsible Think Block */
+details.think-block {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-left: 3px solid var(--text-muted);
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+}
+
+details.think-block summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    user-select: none;
+    outline: none;
+}
+
+details.think-block .think-content {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Sider Panel Styles */
+.sider-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100%;
+    background-color: var(--bg-panel);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+}
+
+.sider-panel.open {
+    transform: translateX(0);
+}
+
+.sider-panel.no-transition {
+    transition: none !important;
+}
+
+.sider-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sider-input-area {
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sider-input-area input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    color: white;
+}
+
+.sider-input-area .primary-btn {
+    margin: 0;
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+}
+
+.sider-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+    color: #a855f7;
+    padding: 1rem 0.5rem;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s;
+    z-index: 99;
+}
+
+.sider-toggle-btn:hover {
+    background-color: rgba(168, 85, 247, 0.1);
+}
+
+.sider-toggle-btn.hidden {
+    right: -50px;
 }

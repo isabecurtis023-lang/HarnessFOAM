@@ -2,7 +2,6 @@ from typing import TypedDict, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 import time
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 class SimulationState(TypedDict, total=False):
     prompt: str
     post_prompt: str
@@ -20,10 +19,10 @@ class SimulationState(TypedDict, total=False):
     max_errors: int
     current_step: str
     image_base64: Optional[str]
+    llm_kwargs: Optional[Dict[str, Any]]  # Runtime API overrides passed from server
 
 from harnessfoam.agents.architect import plan_simulation
 
-# 2026-08-15 | Gemini 3.5 Flash (Low)
 def architect_node(state: SimulationState) -> SimulationState:
     # Normalize state for backward compatibility
     if 'prompt' not in state and 'user_requirement' in state:
@@ -33,7 +32,6 @@ def architect_node(state: SimulationState) -> SimulationState:
     if 'case_dir' not in state and 'case_id' in state:
         state['case_dir'] = state['case_id']
     
-    # 2026-08-15 | Gemini 3.5 Flash (Low)
     if state.get('case_dir') and state['case_dir'].startswith('demo_') and not state['case_dir'].startswith('demo/'):
         state['case_dir'] = f"demo/{state['case_dir']}"
     if 'logs' not in state:
@@ -47,7 +45,8 @@ def architect_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'architect'
 
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
-    state['plan'] = plan_simulation(state['prompt'])
+    llm_kwargs = state.get('llm_kwargs') or {}
+    state['plan'] = plan_simulation(state['prompt'], llm_kwargs=llm_kwargs)
     state['file_plan'] = state['plan']
     print(f"Architect plan generated: {len(state['plan'])} files.")
     return state
@@ -55,12 +54,12 @@ def architect_node(state: SimulationState) -> SimulationState:
 from harnessfoam.agents.meshing import generate_mesh_script
 from harnessfoam.agents.visualizer import generate_visualization_script
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def meshing_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'meshing'
     print(f"Meshing Agent: Generating mesh for case {state['case_id']}")
     
-    mesh_results = generate_mesh_script(state['prompt'])
+    llm_kwargs = state.get('llm_kwargs') or {}
+    mesh_results = generate_mesh_script(state['prompt'], llm_kwargs=llm_kwargs)
     state['logs']['is_gmsh_required'] = mesh_results['is_gmsh_required']
     state['logs']['mesh_python_script'] = mesh_results['python_script']
     state['mesh_job_id'] = f"mesh_{state['case_id']}_{int(time.time())}"
@@ -68,11 +67,11 @@ def meshing_node(state: SimulationState) -> SimulationState:
 
 from harnessfoam.agents.input_writer import write_simulation_inputs
 
-# 2026-08-15 | Gemini 3.5 Flash (Low)
 def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
-    state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'])
+    llm_kwargs = state.get('llm_kwargs') or {}
+    state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'], llm_kwargs=llm_kwargs)
     
     # Write files to disk
     import os
@@ -80,7 +79,8 @@ def input_writer_node(state: SimulationState) -> SimulationState:
     if case_dir:
         os.makedirs(case_dir, exist_ok=True)
         for rel_path, content in state['logs']['generated_files'].items():
-            full_path = os.path.join(case_dir, rel_path)
+            safe_rel_path = rel_path.lstrip("/\\")
+            full_path = os.path.join(case_dir, safe_rel_path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "w") as f:
                 f.write(content)
@@ -91,41 +91,44 @@ def input_writer_node(state: SimulationState) -> SimulationState:
 from harnessfoam.agents.runner import generate_hpc_script, execute_simulation
 from harnessfoam.agents.reviewer import analyze_errors
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def runner_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'runner'
     print(f"Runner Agent: Generating run script...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
-    slurm_script = generate_hpc_script(state['prompt'])
+    llm_kwargs = state.get('llm_kwargs') or {}
+    slurm_script = generate_hpc_script(state['prompt'], llm_kwargs=llm_kwargs)
     state['logs']['slurm_script'] = slurm_script
     
-    # Actually execute it locally!
-    success, output = execute_simulation(state['case_dir'])
-    state['status'] = 'SUCCESS' if success else 'FAILED'
+    # We no longer execute the simulation synchronously in the graph.
+    # We just write the Allrun script to the case dir.
+    import os
+    allrun_path = os.path.join(state['case_dir'], "Allrun")
+    with open(allrun_path, "w") as f:
+        f.write(slurm_script)
     
-    if not success:
-        state['logs']['execution_error'] = output
-    else:
-        state['logs']['execution_output'] = output
-        
+    # Make it executable (cross-platform fallback)
+    try:
+        os.chmod(allrun_path, 0o755)
+    except: pass
+    
+    state['status'] = 'SUCCESS'
     return state
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def reviewer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'reviewer'
     print(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
     
     error_logs = state['logs'].get('execution_error', 'Unknown error')
-    review_results = analyze_errors(error_logs)
+    llm_kwargs = state.get('llm_kwargs') or {}
+    review_results = analyze_errors(error_logs, llm_kwargs=llm_kwargs)
     state['logs']['review_suggestions'] = review_results['suggestions']
     print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
 from harnessfoam.agents.visualizer import execute_visualization
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def visualizer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'visualizer'
     print(f"Visualization Agent: Generating visuals...")
@@ -133,7 +136,8 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     # If the user provided a custom post-processing prompt, use it; else use the main prompt
     viz_prompt = state.get('post_prompt') or state.get('prompt')
     
-    viz_results = generate_visualization_script(viz_prompt)
+    llm_kwargs = state.get('llm_kwargs') or {}
+    viz_results = generate_visualization_script(viz_prompt, llm_kwargs=llm_kwargs)
     state['logs']['is_visualization_required'] = viz_results['is_visualization_required']
     state['logs']['pyvista_script'] = viz_results['pyvista_script']
     
@@ -149,12 +153,10 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state
 
-# 2026-08-15 | Gemini 3.5 Flash (Low)
 def end_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'end'
     return state
 
-# 2026-08-15 | Gemini 3.5 Flash (Low)
 def should_review(state: SimulationState) -> str:
     if state['status'] == 'FAILED' and state['errors'] < state['max_errors']:
         return "review"

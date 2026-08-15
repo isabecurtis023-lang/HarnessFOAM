@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel, Field
-from harnessfoam.agents.llm_config import build_llm
+from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -10,8 +10,8 @@ class VisualizationScriptResult(BaseModel):
     is_visualization_required: bool = Field(description="True if the user requested any visualization, False otherwise.")
     pyvista_script: str = Field(description="The complete python script using pyvista to render the flow field and save as .png. Empty if not required.")
 
-def build_visualizer_agent():
-    llm = build_llm(temperature=0.1)
+def build_visualizer_agent(llm_kwargs: dict = None):
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     prompt = PromptTemplate(
         template="""You are an expert in scientific data visualization using PyVista.
@@ -25,16 +25,16 @@ Output ONLY the structured JSON. Do not provide explanations.
         input_variables=["user_requirement"]
     )
     
-    chain = prompt | llm.with_structured_output(VisualizationScriptResult)
+    chain = create_structured_chain(llm, prompt, VisualizationScriptResult)
     return chain
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
-def generate_visualization_script(prompt_text: str) -> dict:
+def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None) -> dict:
     """Execute the visualization agent to determine rendering needs and generate scripts."""
     try:
-        chain = build_visualizer_agent()
+        chain = build_visualizer_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"user_requirement": prompt_text})
         return {
+            "is_gmsh_required": result.is_visualization_required, # Note: using is_gmsh_required in parent graph returned dict for backward compat
             "is_visualization_required": result.is_visualization_required,
             "pyvista_script": result.pyvista_script
         }
@@ -46,7 +46,6 @@ def generate_visualization_script(prompt_text: str) -> dict:
             "pyvista_script": ""
         }
 
-# 2026-08-15 | Gemini 2.5 Pro
 import subprocess
 import base64
 

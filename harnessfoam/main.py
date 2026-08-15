@@ -1,4 +1,3 @@
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 import asyncio
 from harnessfoam.core.mcp_server import app
 from mcp.server.stdio import stdio_server

@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel, Field
-from harnessfoam.agents.llm_config import build_llm
+from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -9,8 +9,8 @@ load_dotenv()
 class SlurmScriptResult(BaseModel):
     script_content: str = Field(description="The complete Slurm submission script content")
 
-def build_runner_agent():
-    llm = build_llm(temperature=0.1)
+def build_runner_agent(llm_kwargs: dict = None):
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM and HPC clusters.
@@ -23,18 +23,17 @@ Output ONLY the script content. Ensure that the script is fully functional and m
         input_variables=["user_requirement"]
     )
     
-    chain = prompt | llm.with_structured_output(SlurmScriptResult)
+    chain = create_structured_chain(llm, prompt, SlurmScriptResult)
     return chain
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
-def generate_hpc_script(prompt_text: str) -> str:
+def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None) -> str:
     """Execute the runner agent to generate a slurm script if HPC is requested."""
     # Only run the heavy LLM call if HPC is actually mentioned to save costs
     if "hpc" not in prompt_text.lower() and "slurm" not in prompt_text.lower() and "cluster" not in prompt_text.lower():
         return "# Local run, no Slurm script needed.\n./Allrun"
         
     try:
-        chain = build_runner_agent()
+        chain = build_runner_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"user_requirement": prompt_text})
         return result.script_content
     except Exception as e:
@@ -42,7 +41,6 @@ def generate_hpc_script(prompt_text: str) -> str:
         # Fallback script
         return "#!/bin/bash\n#SBATCH -N 1\n#SBATCH -n 32\n./Allrun -parallel"
 
-# 2026-08-15 | Gemini 2.5 Pro
 import subprocess
 
 def execute_simulation(case_dir: str) -> tuple[bool, str]:

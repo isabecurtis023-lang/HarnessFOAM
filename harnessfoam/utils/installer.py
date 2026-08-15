@@ -1,4 +1,3 @@
-# 2026-08-15 (gemini-2.5-pro)
 import platform
 import shutil
 import subprocess

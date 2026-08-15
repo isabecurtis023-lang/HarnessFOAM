@@ -1,7 +1,7 @@
 import os
 from typing import List
 from pydantic import BaseModel, Field
-from harnessfoam.agents.llm_config import build_llm
+from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -15,11 +15,8 @@ class FolderFileStruct(BaseModel):
 class ArchitectPlan(BaseModel):
     subtasks: List[FolderFileStruct] = Field(description="List of files to generate")
 
-def build_architect_agent():
-    # If the environment lacks the API key, fallback to a dummy chain or handle it gracefully.
-    # The ChatOpenAI will automatically pick up OPENAI_API_KEY and OPENAI_API_BASE.
-    # We set a default model, e.g., 'minimax-m27' or whichever is supported by the custom endpoint.
-    llm = build_llm(temperature=0.1)
+def build_architect_agent(llm_kwargs: dict = None):
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     prompt = PromptTemplate(
         template="""You are an experienced Planner specializing in OpenFOAM projects.
@@ -33,14 +30,12 @@ Make sure you generate all the necessary files for the user's requirements.
         input_variables=["user_requirement"]
     )
     
-    # We use with_structured_output to enforce JSON output matching ArchitectPlan
-    chain = prompt | llm.with_structured_output(ArchitectPlan)
+    chain = create_structured_chain(llm, prompt, ArchitectPlan)
     return chain
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
-def plan_simulation(prompt_text: str) -> List[dict]:
+def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
     """Execute the architect agent to get a structured plan."""
     try:
-        chain = build_architect_agent()
+        chain = build_architect_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"user_requirement": prompt_text})
         return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
     except Exception as e:

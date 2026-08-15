@@ -1,6 +1,7 @@
 import os
+from typing import List
 from pydantic import BaseModel, Field
-from harnessfoam.agents.llm_config import build_llm
+from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -10,8 +11,8 @@ class MeshingScriptResult(BaseModel):
     is_gmsh_required: bool = Field(description="True if Gmsh library should be used, False if native OpenFOAM blockMesh/snappyHexMesh is sufficient.")
     python_script: str = Field(description="The complete python script to generate the .msh file using the gmsh library. Empty if not required.")
 
-def build_meshing_agent():
-    llm = build_llm(temperature=0.1)
+def build_meshing_agent(llm_kwargs: dict = None):
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     prompt = PromptTemplate(
         template="""You are an expert in computational fluid dynamics and mesh generation.
@@ -25,14 +26,13 @@ Output ONLY the structured JSON. Do not provide explanations.
         input_variables=["user_requirement"]
     )
     
-    chain = prompt | llm.with_structured_output(MeshingScriptResult)
+    chain = create_structured_chain(llm, prompt, MeshingScriptResult)
     return chain
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
-def generate_mesh_script(prompt_text: str) -> dict:
+def generate_mesh_script(prompt_text: str, llm_kwargs: dict = None) -> dict:
     """Execute the meshing agent to determine meshing strategy and generate scripts."""
     try:
-        chain = build_meshing_agent()
+        chain = build_meshing_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"user_requirement": prompt_text})
         return {
             "is_gmsh_required": result.is_gmsh_required,

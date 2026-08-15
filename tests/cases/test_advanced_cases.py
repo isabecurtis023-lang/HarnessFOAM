@@ -1,4 +1,3 @@
-# 2026-08-15 (gemini-2.5-pro)
 """
 This module contains 10 advanced multi-physics benchmark test cases for the HarnessFOAM framework.
 These cases are designed to validate the framework's capability across a wide range of computational fluid dynamics 

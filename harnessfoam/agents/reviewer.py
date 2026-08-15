@@ -1,7 +1,7 @@
 import os
 from typing import List
 from pydantic import BaseModel, Field
-from harnessfoam.agents.llm_config import build_llm
+from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -16,8 +16,8 @@ class ReviewResult(BaseModel):
     is_resolved: bool = Field(description="True if there are no errors, False if errors found")
     fixes: List[FixSuggestion] = Field(description="List of files to fix and how to fix them")
 
-def build_reviewer_agent():
-    llm = build_llm(temperature=0.1)
+def build_reviewer_agent(llm_kwargs: dict = None):
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM simulation and numerical modeling.
@@ -34,14 +34,13 @@ Provide the response in the structured format required.
         input_variables=["error_logs"]
     )
     
-    chain = prompt | llm.with_structured_output(ReviewResult)
+    chain = create_structured_chain(llm, prompt, ReviewResult)
     return chain
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
-def analyze_errors(error_logs: str) -> dict:
+def analyze_errors(error_logs: str, llm_kwargs: dict = None) -> dict:
     """Execute the reviewer agent to analyze logs and suggest fixes."""
     try:
-        chain = build_reviewer_agent()
+        chain = build_reviewer_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"error_logs": error_logs})
         return {
             "is_resolved": result.is_resolved,

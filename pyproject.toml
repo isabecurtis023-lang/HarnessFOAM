@@ -27,7 +27,6 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 dev = [
     "pytest>=7.0",
     "pytest-asyncio",
@@ -35,5 +34,4 @@ dev = [
 ]
 
 [project.scripts]
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
 harnessfoam = "harnessfoam.main:main"

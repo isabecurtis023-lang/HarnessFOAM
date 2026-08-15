@@ -93,6 +93,6 @@ We are constantly pushing the boundaries of AI for Science (AI4S). Here is what 
 ---
 
 <div align="center">
-<i>2026-08-15 (gemini-2.5-pro) - Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</i><br>
+<i>Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</i><br>
 <i>Empowering the next generation of automated engineering.</i>
 </div>
