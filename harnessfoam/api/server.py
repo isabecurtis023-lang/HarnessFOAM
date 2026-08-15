@@ -57,6 +57,7 @@ async def websocket_endpoint(websocket: WebSocket):
         api_base = data.get("api_base")
         model = data.get("model")
         api_key = data.get("api_key")
+        post_prompt = data.get("post_prompt", "")
         
         if api_base: os.environ["OPENAI_API_BASE"] = api_base
         if model: os.environ["LLM_MODEL"] = model
@@ -67,6 +68,7 @@ async def websocket_endpoint(websocket: WebSocket):
         workflow = create_workflow()
         initial_state = SimulationState(
             user_requirement=prompt,
+            post_prompt=post_prompt,
             case_dir=output_dir
         )
         
@@ -77,26 +79,32 @@ async def websocket_endpoint(websocket: WebSocket):
             ("Meshing Agent", "Generating blockMesh/snappyHexMesh topology..."),
             ("Input Writer Agent", "Compiling numerical dictionaries (fvSchemes, fvSolution)..."),
             ("Reviewer Agent", "Validating dictionary syntax and physical constraints..."),
-            ("Runner Agent", "Preparing HPC SLURM scripts and solver commands...")
+            ("Runner Agent", "Executing physics solvers locally..."),
+            ("Visualizer Agent", "Running PyVista post-processing pipeline...")
         ]
         
         for agent, action in steps:
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(1.0)
             await websocket.send_json({"type": "step", "agent": agent, "message": action})
             
-        await websocket.send_json({"type": "info", "message": "Executing full graph in background..."})
+        await websocket.send_json({"type": "info", "message": "Executing full graph in background (this may take a few minutes depending on mesh)..."})
         
         # Execute the actual graph
         final_state = await workflow.ainvoke(initial_state)
         
         files_created = [f"{f['folder']}/{f['file']}" for f in final_state.get("file_plan", [])]
         
-        await websocket.send_json({
+        response_payload = {
             "type": "complete", 
             "message": "Simulation workflow complete!", 
             "directory": output_dir,
             "files": files_created
-        })
+        }
+        
+        if final_state.get("image_base64"):
+            response_payload["image_base64"] = final_state.get("image_base64")
+            
+        await websocket.send_json(response_payload)
         
     except WebSocketDisconnect:
         print("Client disconnected")

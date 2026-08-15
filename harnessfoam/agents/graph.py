@@ -5,6 +5,7 @@ import time
 # 2026-08-15 | Gemini 3.5 Flash (Medium)
 class SimulationState(TypedDict, total=False):
     prompt: str
+    post_prompt: str
     user_requirement: str
     case_id: str
     case_dir: str
@@ -18,6 +19,7 @@ class SimulationState(TypedDict, total=False):
     errors: int
     max_errors: int
     current_step: str
+    image_base64: Optional[str]
 
 from harnessfoam.agents.architect import plan_simulation
 
@@ -39,7 +41,6 @@ def architect_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'architect'
 
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
-    # Call the real LangChain logic
     state['plan'] = plan_simulation(state['prompt'])
     state['file_plan'] = state['plan']
     print(f"Architect plan generated: {len(state['plan'])} files.")
@@ -53,15 +54,9 @@ def meshing_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'meshing'
     print(f"Meshing Agent: Generating mesh for case {state['case_id']}")
     
-    # Call real LangChain logic for meshing
     mesh_results = generate_mesh_script(state['prompt'])
     state['logs']['is_gmsh_required'] = mesh_results['is_gmsh_required']
     state['logs']['mesh_python_script'] = mesh_results['python_script']
-    if mesh_results['is_gmsh_required']:
-        print("Meshing Agent generated Gmsh Python script.")
-    else:
-        print("Meshing Agent determined native OpenFOAM meshing is sufficient.")
-        
     state['mesh_job_id'] = f"mesh_{state['case_id']}_{int(time.time())}"
     return state
 
@@ -71,30 +66,31 @@ from harnessfoam.agents.input_writer import write_simulation_inputs
 def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
-    # Call the real LangChain logic
     state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'])
     state['file_plan'] = state['plan']
-    print(f"Input Writer successfully generated contents for {len(state['logs']['generated_files'])} files.")
     return state
 
-from harnessfoam.agents.runner import generate_hpc_script
+from harnessfoam.agents.runner import generate_hpc_script, execute_simulation
 from harnessfoam.agents.reviewer import analyze_errors
 
 # 2026-08-15 | Gemini 3.5 Flash (Medium)
 def runner_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'runner'
-    print(f"Runner Agent: Submitting simulation job...")
+    print(f"Runner Agent: Generating run script...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
-    # Generate Slurm script if HPC is requested
     slurm_script = generate_hpc_script(state['prompt'])
     state['logs']['slurm_script'] = slurm_script
-    print(f"Runner generated execution script:\n{slurm_script[:50]}...")
     
-    # Mocking success or failure
-    state['status'] = 'FAILED' if state['errors'] < 1 else 'SUCCESS'
-    if state['status'] == 'FAILED':
-        state['logs']['execution_error'] = "--> FOAM FATAL ERROR:\nCourant number exceeded 1.0"
+    # Actually execute it locally!
+    success, output = execute_simulation(state['case_dir'])
+    state['status'] = 'SUCCESS' if success else 'FAILED'
+    
+    if not success:
+        state['logs']['execution_error'] = output
+    else:
+        state['logs']['execution_output'] = output
+        
     return state
 
 # 2026-08-15 | Gemini 3.5 Flash (Medium)
@@ -103,26 +99,34 @@ def reviewer_node(state: SimulationState) -> SimulationState:
     print(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
     
-    # Call the real LangChain logic
     error_logs = state['logs'].get('execution_error', 'Unknown error')
     review_results = analyze_errors(error_logs)
     state['logs']['review_suggestions'] = review_results['suggestions']
     print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
+from harnessfoam.agents.visualizer import execute_visualization
+
 # 2026-08-15 | Gemini 3.5 Flash (Medium)
 def visualizer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'visualizer'
     print(f"Visualization Agent: Generating visuals...")
     
-    # Call real LangChain logic for visualization
-    viz_results = generate_visualization_script(state['prompt'])
+    # If the user provided a custom post-processing prompt, use it; else use the main prompt
+    viz_prompt = state.get('post_prompt') or state.get('prompt')
+    
+    viz_results = generate_visualization_script(viz_prompt)
     state['logs']['is_visualization_required'] = viz_results['is_visualization_required']
     state['logs']['pyvista_script'] = viz_results['pyvista_script']
-    if viz_results['is_visualization_required']:
-        print("Visualizer Agent generated PyVista script.")
+    
+    if viz_results['is_visualization_required'] and state['status'] == 'SUCCESS':
+        print("Visualizer Agent generated PyVista script. Executing locally...")
+        img_base64 = execute_visualization(state['case_dir'], viz_results['pyvista_script'])
+        if img_base64:
+            state['image_base64'] = img_base64
+            print("Visualization successfully rendered.")
     else:
-        print("No visualization requested.")
+        print("No visualization requested or simulation failed.")
         
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state

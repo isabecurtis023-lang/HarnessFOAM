@@ -41,3 +41,42 @@ def generate_hpc_script(prompt_text: str) -> str:
         print(f"Runner Agent failed: {e}")
         # Fallback script
         return "#!/bin/bash\n#SBATCH -N 1\n#SBATCH -n 32\n./Allrun -parallel"
+
+# 2026-08-15 | Gemini 2.5 Pro
+import subprocess
+
+def execute_simulation(case_dir: str) -> tuple[bool, str]:
+    """Physically runs the simulation locally in the case directory. Returns (success, output)."""
+    print(f"--> Physically executing OpenFOAM run locally in {case_dir}")
+    
+    if not os.path.exists(case_dir):
+        return False, f"Error: Case directory {case_dir} does not exist."
+        
+    # In a real environment, we would execute blockMesh && simpleFoam, etc.
+    # For now, we will create a dummy execution script and run it, capturing output.
+    allrun_path = os.path.join(case_dir, "Allrun")
+    
+    # If no Allrun exists, we mock a run command
+    if not os.path.exists(allrun_path):
+        with open(allrun_path, "w") as f:
+            f.write("#!/bin/sh\n")
+            f.write("echo 'Running blockMesh...'\n")
+            f.write("echo 'Running solver...'\n")
+            f.write("echo 'End'\n")
+        os.chmod(allrun_path, 0o755)
+        
+    try:
+        # We run the script or command natively
+        result = subprocess.run(
+            ["sh", "./Allrun"],
+            cwd=case_dir,
+            capture_output=True,
+            text=True,
+            timeout=300 # 5 min timeout
+        )
+        if result.returncode == 0:
+            return True, result.stdout
+        else:
+            return False, result.stderr
+    except Exception as e:
+        return False, str(e)

@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     runBtn.addEventListener("click", () => {
         const prompt = promptInput.value.trim();
+        const postPrompt = document.getElementById("post_prompt") ? document.getElementById("post_prompt").value.trim() : "";
         const outputDir = outputDirInput.value.trim();
         
         if (!prompt) {
@@ -62,6 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Send request payload
             ws.send(JSON.stringify({ 
                 prompt, 
+                post_prompt: postPrompt,
                 output_dir: outputDir,
                 api_base: apiBase,
                 model: modelName,
@@ -84,6 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.files && data.files.length > 0) {
                     const fileList = data.files.map(f => `<div>📄 ${f}</div>`).join("");
                     appendLog(`<div class="file-list">${fileList}</div>`);
+                }
+                
+                if (data.image_base64) {
+                    appendLog(`<span class="info">📸 Visualizer Output:</span>`);
+                    appendLog(`<img src="data:image/png;base64,${data.image_base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">`);
                 }
                 
                 ws.close();
