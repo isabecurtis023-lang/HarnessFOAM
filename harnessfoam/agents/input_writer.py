@@ -10,11 +10,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def _call_api_direct(prompt: str, llm_kwargs: dict) -> str:
+def _call_api_direct(prompt: str, llm_kwargs: dict, max_retries: int = 2) -> str:
     """
-    Direct requests-based API call, bypassing LangChain entirely.
+    Direct requests-based API call using **streaming** to avoid read-timeout
+    on slow / thinking models (e.g. DeepSeek-R1 on 科技云).
     Handles empty content by checking reasoning_content as fallback.
-    Disables extended thinking via budget_tokens=0 where supported.
+    Includes retry logic for transient network errors.
+    # 2026-08-15 – Claude Opus 4.6 (Thinking): switched to streaming + retry
     """
     api_key  = llm_kwargs.get('api_key')  or os.getenv('OPENAI_API_KEY', 'dummy')
     base_url = llm_kwargs.get('base_url') or os.getenv('OPENAI_API_BASE', '')
@@ -42,21 +44,77 @@ def _call_api_direct(prompt: str, llm_kwargs: dict) -> str:
         ],
         'temperature': 0.1,
         'max_tokens': 3000,
+        'stream': True,          # ← stream to prevent read-timeout
     }
 
-    resp = requests.post(url, headers=headers, json=payload, timeout=90)
-    resp.raise_for_status()
-    data = resp.json()
+    import json as _json
 
-    choice = data['choices'][0]
-    msg = choice['message']
-    content = (msg.get('content') or '').strip()
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            # Use a long read-timeout (600s) but streaming keeps the conn alive
+            resp = requests.post(
+                url, headers=headers, json=payload,
+                timeout=(30, 600),   # (connect, read)
+                stream=True,
+            )
+            resp.raise_for_status()
 
-    # Some thinking models put answer in reasoning_content when content is empty
-    if not content:
-        content = (msg.get('reasoning_content') or '').strip()
+            # ---- Collect streamed SSE chunks ----
+            collected_content = []
+            collected_reasoning = []
 
-    return content
+            for raw_line in resp.iter_lines(decode_unicode=True):
+                if not raw_line:
+                    continue
+                line = raw_line.strip()
+                if not line.startswith('data:'):
+                    continue
+                data_str = line[len('data:'):].strip()
+                if data_str == '[DONE]':
+                    break
+                try:
+                    chunk = _json.loads(data_str)
+                    delta = chunk.get('choices', [{}])[0].get('delta', {})
+                    if delta.get('content'):
+                        collected_content.append(delta['content'])
+                    if delta.get('reasoning_content'):
+                        collected_reasoning.append(delta['reasoning_content'])
+                except (_json.JSONDecodeError, IndexError, KeyError):
+                    continue
+
+            content = ''.join(collected_content).strip()
+
+            # Fallback: some thinking models put answer in reasoning_content
+            if not content:
+                content = ''.join(collected_reasoning).strip()
+
+            if content:
+                return content
+
+            # If both are empty, treat as transient and retry
+            last_error = ValueError("API returned empty content from stream")
+            print(f"Input Writer: empty stream response (attempt {attempt+1}/{max_retries+1})")
+
+        except (requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError) as e:
+            last_error = e
+            wait = 5 * (attempt + 1)
+            print(f"Input Writer: network error (attempt {attempt+1}/{max_retries+1}): {e}, retrying in {wait}s...")
+            import time
+            time.sleep(wait)
+        except requests.exceptions.HTTPError as e:
+            # Don't retry 4xx errors (bad request, auth, etc.)
+            if resp.status_code < 500:
+                raise
+            last_error = e
+            wait = 5 * (attempt + 1)
+            print(f"Input Writer: server error {resp.status_code} (attempt {attempt+1}/{max_retries+1}), retrying in {wait}s...")
+            import time
+            time.sleep(wait)
+
+    raise last_error or RuntimeError("All retries exhausted")
 
 
 def write_simulation_inputs(

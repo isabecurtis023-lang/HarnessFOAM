@@ -11,13 +11,15 @@ def build_llm(temperature: float = 0.0, **kwargs) -> BaseChatModel:
     provider = kwargs.get("provider", os.getenv("LLM_PROVIDER", "openai")).lower()
     
     if provider == "openai":
+        # 2026-08-15 – Claude Opus 4.6 (Thinking): increased timeout for slow 科技云 models
         return ChatOpenAI(
             model=kwargs.get("model") or os.getenv("LLM_MODEL", "gpt-3.5-turbo"),
             temperature=temperature,
             api_key=kwargs.get("api_key") or os.getenv("OPENAI_API_KEY") or "dummy",
             base_url=kwargs.get("base_url") or os.getenv("OPENAI_API_BASE"),
-            timeout=120,    # prevent infinite hang
-            max_retries=1,
+            timeout=600,    # 10 min – thinking models on 科技云 can be very slow
+            max_retries=2,
+            streaming=True,  # keep connection alive during long generation
         )
     # Extensible for Anthropic, Bedrock, etc.
     elif provider == "anthropic":

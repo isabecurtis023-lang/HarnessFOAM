@@ -167,8 +167,9 @@ def llm_status(api_base: str = "", api_key: str = ""):
     import os
     import requests
     
-    base = api_base or os.getenv("API_BASE", "")
-    key = api_key or os.getenv("API_KEY", "")
+    # 2026-08-15 – Claude Opus 4.6: fix env var names to match .env file
+    base = api_base or os.getenv("OPENAI_API_BASE", "")
+    key = api_key or os.getenv("OPENAI_API_KEY", "")
     
     if not base:
         return {"status": "error", "message": "API Base URL missing"}
@@ -409,18 +410,21 @@ Keep your answers helpful, concise, and focused on OpenFOAM setups or prompt eng
             output_dir = data.get("output_dir", "")
             openfoam_status = data.get("openfoam_status", "")
             
-            # API Config overrides
-            api_base = data.get("api_base")
-            model = data.get("model")
-            api_key = data.get("api_key")
-            
-            if api_base: os.environ["OPENAI_API_BASE"] = api_base
-            if model: os.environ["LLM_MODEL"] = model
-            if api_key: os.environ["OPENAI_API_KEY"] = api_key
+            # 2026-08-15 – Claude Opus 4.6: pass kwargs directly instead of
+            # mutating os.environ (avoids race conditions and ensures
+            # the model set in Settings is always used by the LLM)
+            api_base = data.get("api_base", "").strip()
+            model = data.get("model", "").strip()
+            api_key = data.get("api_key", "").strip()
             
             if not user_msg: continue
             
-            llm = build_llm(temperature=0.7)
+            llm_kwargs: dict = {}
+            if api_base: llm_kwargs["base_url"] = api_base
+            if model:    llm_kwargs["model"]    = model
+            if api_key:  llm_kwargs["api_key"]  = api_key
+            
+            llm = build_llm(temperature=0.7, **llm_kwargs)
             
             # Inject context
             context_msg = f"""[System Context - User's Current Settings]

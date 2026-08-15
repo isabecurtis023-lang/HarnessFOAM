@@ -18,7 +18,7 @@
                     <h1>HarnessFOAM</h1>
                     <p>AI-Powered CFD Automation</p>
                 </div>
-                <button id="settings-btn" style="background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s;" title="API Settings">⚙️</button>
+
             </header>
             
             <div class="input-group">
@@ -43,8 +43,10 @@
                 <button id="run-btn" class="primary-btn" style="flex: 1; margin-top: 0;">Generate Files</button>
                 <button id="run-openfoam-btn" class="primary-btn" style="flex: 1; margin-top: 0; background-color: #10b981; display: none;">Run OpenFOAM</button>
             </div>
+
             
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem;">
+
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem;">
                 <div class="status-indicator">
                     <div class="dot" id="openfoam-dot" style="background-color: #fbbf24;"></div>
                     <span id="openfoam-status">Checking OpenFOAM...</span>
@@ -58,6 +60,7 @@
                     <span id="connection-status">Agent Connection: Disconnected</span>
                 </div>
             </div>
+            <button id="settings-bottom-btn" class="secondary-btn" style="margin-top: 0.5rem; width: 100%; height: 2.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;" title="Settings">⚙️ Setting</button>
         </aside>
         
         <div class="resizer" id="cp-resizer"></div>
@@ -83,10 +86,12 @@
                         <label for="model_name">Model Name</label>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <select id="model_name" style="flex: 1; padding: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
+                                <!-- 2026-08-15 – Claude Opus 4.6: updated to actual 科技云 models -->
+                                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                                <option value="deepseek-v3.2">deepseek-v3.2</option>
+                                <option value="qwen3.5">qwen3.5</option>
                                 <option value="minimax-m27">minimax-m27</option>
-                                <option value="gpt-4o">gpt-4o</option>
-                                <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet</option>
-                                <option value="deepseek-chat">deepseek-chat</option>
+                                <option value="gpt-oss-120b">gpt-oss-120b</option>
                             </select>
                             <button id="fetch-models-btn" class="secondary-btn" style="padding: 0.5rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; cursor: pointer;" title="Auto-detect models">🔄</button>
                         </div>

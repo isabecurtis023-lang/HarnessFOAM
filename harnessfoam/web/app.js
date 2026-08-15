@@ -429,7 +429,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Modal Logic
-    const settingsBtn = document.getElementById("settings-btn");
+    const settingsBtn = document.getElementById("settings-bottom-btn");
     const modal = document.getElementById("settings-modal");
     const closeModalBtn = document.querySelector(".close-modal");
     const saveSettingsBtn = document.getElementById("save-settings-btn");
