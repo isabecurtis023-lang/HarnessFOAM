@@ -426,7 +426,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 try:
                     with open(allrun_path, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
-                    if "./Allrun" in content or "Local run, no Slurm script needed" in content:
+                    if "./Allrun" in content or "Local run, no Slurm script needed" in content or "WM_PROJECT_DIR" not in content:
                         should_rewrite = True
                 except Exception:
                     should_rewrite = True
