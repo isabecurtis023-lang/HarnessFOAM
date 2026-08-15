@@ -8,6 +8,22 @@ document.addEventListener("DOMContentLoaded", () => {
     
     let ws = null;
 
+    // 2026-08-15 – Gemini 3.5 Flash: Sidebar collapse toggle logic
+    const toggleCpBtn = document.getElementById("toggle-cp-btn");
+    const controlPanel = document.getElementById("control-panel");
+    
+    if (toggleCpBtn && controlPanel) {
+        toggleCpBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            controlPanel.classList.toggle("collapsed");
+            if (controlPanel.classList.contains("collapsed")) {
+                toggleCpBtn.title = "Expand Panel";
+            } else {
+                toggleCpBtn.title = "Collapse Panel";
+            }
+        });
+    }
+
     function appendLog(html) {
         const div = document.createElement("div");
         div.className = "log-entry";

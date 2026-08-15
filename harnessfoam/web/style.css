@@ -40,12 +40,58 @@ body {
 
 /* Sidebar */
 .control-panel {
+    position: relative;
     width: 350px;
     background-color: var(--bg-panel);
     padding: 2rem;
     display: flex;
     flex-direction: column;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2026-08-15 – Gemini 3.5 Flash: Sidebar collapse toggle button and state styles */
+.toggle-cp-btn {
+    position: absolute;
+    right: 1rem;
+    top: 1.8rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 100;
+    transition: color 0.2s, transform 0.3s;
+    user-select: none;
+    outline: none;
+}
+
+.toggle-cp-btn:hover {
+    color: var(--text-main);
+}
+
+.control-panel.collapsed {
+    width: 0 !important;
+    padding: 0 !important;
+    border-right: none !important;
+    overflow: hidden;
+}
+
+.control-panel.collapsed .toggle-cp-btn {
+    position: fixed;
+    left: 10px;
+    top: 10px;
+    background: var(--bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-main);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transform: rotate(180deg);
+}
+
+.control-panel.collapsed + #cp-resizer {
+    display: none !important;
 }
 
 header {
