@@ -119,6 +119,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 llmStatus.textContent = "LLM API: Error";
             });
     }
+    // 2026-08-15 – Gemini 3.5 Flash: Load saved API settings from localStorage
+    const savedApiBase = localStorage.getItem("harnessfoam_api_base");
+    const savedApiKey = localStorage.getItem("harnessfoam_api_key");
+    const savedModelName = localStorage.getItem("harnessfoam_model_name");
+
+    const apiBaseInput = document.getElementById("api_base");
+    const apiKeyInput = document.getElementById("api_key");
+    const modelNameSelect = document.getElementById("model_name");
+
+    if (apiBaseInput && savedApiBase) apiBaseInput.value = savedApiBase;
+    if (apiKeyInput && savedApiKey) apiKeyInput.value = savedApiKey;
+    if (modelNameSelect && savedModelName) {
+        let optionExists = Array.from(modelNameSelect.options).some(opt => opt.value === savedModelName);
+        if (!optionExists) {
+            const opt = document.createElement("option");
+            opt.value = savedModelName;
+            opt.textContent = savedModelName;
+            modelNameSelect.appendChild(opt);
+        }
+        modelNameSelect.value = savedModelName;
+    }
+
     checkLLMStatus();
     
     // Add logic for Browse button
@@ -471,6 +493,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         option.textContent = modelId;
                         modelSelect.appendChild(option);
                     });
+                    // 2026-08-15 – Gemini 3.5 Flash: Re-select the saved model if it's in the fetched list
+                    const currentSavedModel = localStorage.getItem("harnessfoam_model_name");
+                    if (currentSavedModel && data.models.includes(currentSavedModel)) {
+                        modelSelect.value = currentSavedModel;
+                    }
                     modelStatus.style.color = "#10b981";
                     modelStatus.textContent = `Successfully loaded ${data.models.length} models! Click to select.`;
                 } else {
@@ -498,6 +525,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (saveSettingsBtn) {
             saveSettingsBtn.addEventListener("click", () => {
+                // 2026-08-15 – Gemini 3.5 Flash: Save settings to localStorage on save
+                const apiBase = document.getElementById("api_base") ? document.getElementById("api_base").value.trim() : "";
+                const apiKey = document.getElementById("api_key") ? document.getElementById("api_key").value.trim() : "";
+                const modelName = document.getElementById("model_name") ? document.getElementById("model_name").value.trim() : "";
+                
+                localStorage.setItem("harnessfoam_api_base", apiBase);
+                localStorage.setItem("harnessfoam_api_key", apiKey);
+                localStorage.setItem("harnessfoam_model_name", modelName);
+
                 modal.classList.remove("show");
                 if (typeof checkLLMStatus === "function") {
                     checkLLMStatus();
