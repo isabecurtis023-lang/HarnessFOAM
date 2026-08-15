@@ -175,12 +175,12 @@ pytest tests/
 
 We are continuously advancing HarnessFOAM to make CFD engineering fully autonomous. Here are our core milestones:
 
+* **HPC SSH Integration & Remote Dispatch** – Enable full compatibility with remote supercomputing clusters, allowing HarnessFOAM to establish secure SSH connections to HPC systems, automatically dispatch and transfer simulation cases, generate and submit Slurm job scripts, and stream real-time solver logs back to the local Web UI.
 * **Decentralized Peer-to-Peer Scientific Computing (De-Sci)** – Establish a blockchain-backed distributed compute framework, allowing scientific researchers to scale Runner agent workloads across a global peer-to-peer network of idle GPU/HPC nodes.
 * **Generative Physical Diffusion (4D Flow-Diffusion)** – Move beyond traditional numerical discretization by integrating latent physical diffusion models (Flow-Diffusion/Flow-Sora) capable of synthesizing physically consistent 4D flow fields (3D space + time) in milliseconds under arbitrary boundary conditions.
 * **Closed-Loop Vision-Language-Action (VLA) Aero-Design** – Create a unified VLA aerodynamic design agent capable of orchestrating the entire lifecycle from natural language to 3D CAD modeling, gmsh meshing, local simulation, and automated physical verification via robotic 3D-printing and wind-tunnel testing.
 * **Quantum-Accelerated CFD (Q-CFD)** – Develop hybrid quantum-classical solvers for the Runner agent, leveraging variational quantum algorithms (VQE) and the HHL algorithm to solve dense sparse-linear Navier-Stokes matrices on QPUs.
 * **Self-Evolutionary Physics Autopilot** – Implement self-play reinforcement learning loops where agents monitor solver residuals, autonomously write and compile custom local numerical schemes, generate novel turbulence closures, and discover empirical transport laws without human heuristics.
-* **HPC SSH Integration & Remote Dispatch** – Enable full compatibility with remote supercomputing clusters, allowing HarnessFOAM to establish secure SSH connections to HPC systems, automatically dispatch and transfer simulation cases, generate and submit Slurm job scripts, and stream real-time solver logs back to the local Web UI.
 
 ---
 
