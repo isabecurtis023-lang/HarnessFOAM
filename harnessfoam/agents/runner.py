@@ -28,9 +28,9 @@ Output ONLY the script content. Ensure that the script is fully functional and m
 
 def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None) -> str:
     """Execute the runner agent to generate a slurm script if HPC is requested."""
-    # Only run the heavy LLM call if HPC is actually mentioned to save costs
+    # 2026-08-15 – Gemini 3.5 Flash: return a placeholder, handled locally by the graph or server
     if "hpc" not in prompt_text.lower() and "slurm" not in prompt_text.lower() and "cluster" not in prompt_text.lower():
-        return "# Local run, no Slurm script needed.\n./Allrun"
+        return "# Local run, no Slurm script needed.\n# Done."
         
     try:
         chain = build_runner_agent(llm_kwargs=llm_kwargs)
