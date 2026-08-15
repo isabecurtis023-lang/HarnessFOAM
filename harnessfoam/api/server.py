@@ -39,9 +39,11 @@ def browse_folder():
 import tkinter as tk
 from tkinter import filedialog
 root = tk.Tk()
-root.attributes("-topmost", True)
 root.withdraw()
-folder_path = filedialog.askdirectory(title="Select Project Output Directory")
+root.attributes("-topmost", True)
+root.update()
+folder_path = filedialog.askdirectory(parent=root, title="Select Project Output Directory")
+root.destroy()
 print(folder_path, end="")
 """
     try:
