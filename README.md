@@ -16,14 +16,15 @@
 
 Computational Fluid Dynamics (CFD) is an essential tool in engineering but suffers from a steep learning curve and laborious manual setup. **HarnessFOAM** introduces a revolutionary multi-agent framework that fully automates the end-to-end OpenFOAM workflow from a single natural language prompt. 
 
-Powered by **LangGraph** and integrating seamlessly with any Model Context Protocol (MCP) compatible interface, HarnessFOAM delegates complex CFD tasks to a collaborative network of specialized AI agents.
+Powered by **LangGraph** and integrating seamlessly with any Model Context Protocol (MCP) compatible interface, HarnessFOAM delegates complex CFD tasks to a collaborative network of specialized AI agents. It features a premium real-time Web UI, auto-installation of OpenFOAM, and direct physical execution of simulation and visualization.
 
 ### 🔥 Key Innovations
 
-1. **Comprehensive End-to-End Automation**: Manages the complete pipeline including geometry/meshing (via native OpenFOAM or `Gmsh`), solver configuration, HPC execution, and post-processing visualization (via `PyVista`).
-2. **Universal LLM Compatibility**: Seamlessly switch between OpenAI (`GPT-4o`), Anthropic (`Claude 3.5 Sonnet`), DeepSeek (`DeepSeek-V3.2`), or MiniMax (`minimax-m27`) through dynamic environment configurations.
-3. **Graceful Degradation**: Robust `try-except` state handling ensures that even if API keys expire or network requests fail, the framework successfully falls back to logical mock processes, maintaining a 100% crash-free simulation loop.
-4. **HPC & Slurm Integration**: Generates job submission scripts tailored for massive distributed computing clusters (e.g., Perlmutter).
+1. **Comprehensive End-to-End Automation**: Manages the complete pipeline including geometry/meshing, solver configuration, physical HPC/local execution, and dynamic post-processing visualization (via `PyVista`).
+2. **Premium Enterprise Web UI**: A stunning, zero-dependency HTML/JS frontend powered by FastAPI. Track 6 AI agents reasoning in real-time, modify API parameters on the fly, and view generated physics plots directly in your browser.
+3. **Multi-Modal VLM Physics Review**: The Reviewer agent hooks into Vision-Language Models (VLM) like `gpt-4o` to visually inspect rendered physics plots (e.g. boundary layer detachment) and autonomously self-correct unphysical simulation behaviors.
+4. **Universal LLM Compatibility**: Seamlessly switch between OpenAI, Anthropic, DeepSeek, or MiniMax through dynamic Web UI configurations.
+5. **Zero-Barrier Environment Setup**: Intelligent `installer.py` automatically detects host OS and provisions OpenFOAM via Docker or system packages seamlessly.
 
 ---
 
@@ -34,9 +35,9 @@ The intelligence of HarnessFOAM is distributed across 6 specialized agents, dyna
 1. **Architect Agent** (`architect.py`): Interprets user queries and plans the hierarchical file and folder structure.
 2. **Meshing Agent** (`meshing.py`): Converts external `.msh` files or dynamically generates Python-based `gmsh` scripts for complex 2D/3D domains.
 3. **Input Writer Agent** (`input_writer.py`): Generates domain-specific configuration files (`0/U`, `system/controlDict`, `constant/physicalProperties`).
-4. **Runner Agent** (`runner.py`): Executes the OpenFOAM `Allrun` script locally or constructs a `Slurm` script for High-Performance Computing (HPC).
-5. **Reviewer Agent** (`reviewer.py`): Diagnoses execution errors from logs and iteratively proposes corrections.
-6. **Visualizer Agent** (`visualizer.py`): Writes automated `PyVista` scripts to read VTK outputs and render beautiful flow field visualizations.
+4. **Runner Agent** (`runner.py`): Physically executes the OpenFOAM solver locally capturing real standard out, or constructs a `Slurm` script for High-Performance Computing (HPC) clusters.
+5. **Reviewer Agent** (`reviewer.py`): Diagnoses physical execution errors from raw logs and visually analyzes PyVista plots using VLMs to iteratively propose corrections.
+6. **Visualizer Agent** (`visualizer.py`): Accepts dynamic post-processing requirements, writes automated `PyVista` scripts, physically executes them, and pushes base64 renders back to the Web UI.
 
 ---
 
@@ -47,29 +48,30 @@ The intelligence of HarnessFOAM is distributed across 6 specialized agents, dyna
 git clone https://github.com/isabecurtis023-lang/HarnessFOAM.git
 cd HarnessFOAM
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 2. Install Python dependencies and CLI globally
+pip install -e .
 
-# 3. Configure your LLM Provider
-export LLM_PROVIDER="openai" # or "anthropic", "deepseek"
-export OPENAI_API_KEY="your-api-key-here"
-export LLM_MODEL="minimax-m27" # or gpt-4o, claude-3-5-sonnet
+# 3. Launch the Premium Web UI!
+harnessfoam serve --host 127.0.0.1 --port 8000
+```
+Open `http://127.0.0.1:8000` in your browser. If OpenFOAM is not detected, HarnessFOAM will politely ask for permission to install it for you!
 
-# 4. Run the benchmark demo!
-python run_demo.py
+You can also run directly from the terminal CLI:
+```bash
+harnessfoam run "Simulate incompressible flow over a circular cylinder at 2 m/s" -o "cylinder_case"
 ```
 
 ---
 
 ## 🧪 Benchmark & Test Cases
 
-HarnessFOAM is validated against rigorous, paper-grade industrial CFD tests:
+HarnessFOAM is validated against 15 rigorous, paper-grade industrial CFD tests, including 10 advanced multi-physics scenarios:
 
-- **2D Multi Element Airfoil**: Complex aerodynamic interactions with custom `.msh` injection.
-- **3D Tandem Wing**: 3D flow separation and wake interference analysis.
-- **Flow Over Cylinder**: Automated `Gmsh` integration for structured refinement.
-- **Flow Over Two Square Obstacles**: Validating boundary condition mappings.
-- **3D Lid-driven Cavity HPC**: Million-cell mesh generation with parallel 32-core `Slurm` workload deployment.
+- **Heat Transfer**: Buoyancy-driven flow & turbulent heat plates (`buoyantBoussinesqPimpleFoam`).
+- **Multiphase & Droplets**: Classic Dam Break (`interFoam`).
+- **Combustion & Reacting**: Counter-flow diffusion flames (`reactingFoam`).
+- **Shock Dynamics**: Forward-facing supersonic steps & Sod shock tubes (`rhoCentralFoam`).
+- **Turbulent Aerodynamics**: 3D DrivAer car geometry flows (`simpleFoam`).
 
 Run the test suite using:
 ```bash
@@ -82,14 +84,15 @@ pytest tests/
 
 We are constantly pushing the boundaries of AI for Science (AI4S). Here is what we are planning for future iterations:
 
+- [x] **Multi-Modal Vision Integration** (Completed)
+- [x] **Zero-Barrier Auto Installation** (Completed)
+- [x] **OpenAI Codex Program Submission** (Completed)
 - [ ] **Cross-Solver Capability**: Extend beyond OpenFOAM to automate ANSYS Fluent, COMSOL, and SU2 workflows.
-- [ ] **Multi-Modal Vision Integration**: Allow the Reviewer Agent to "see" the visualization output using Vision-Language Models (VLMs) like GPT-4V to self-correct physical anomalies (e.g., non-physical shockwaves or unphysical boundary layer separation).
 - [ ] **Real-Time Digital Twin**: Enable streaming geometry adjustments during an active simulation run via real-time WebSocket communication.
-- [ ] **OpenAI Codex Program**: Graduate the framework to become an official recommended utility for engineering code generation under the OpenAI Codex Open Source Support Program.
 
 ---
 
 <div align="center">
-<i>Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</i><br>
+<i>2026-08-15 (gemini-2.5-pro) - Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</i><br>
 <i>Empowering the next generation of automated engineering.</i>
 </div>
