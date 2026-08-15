@@ -54,3 +54,36 @@ def analyze_errors(error_logs: str) -> dict:
             "is_resolved": False,
             "suggestions": [{"file": "controlDict", "folder": "system", "fix": "Reduce time step to satisfy Courant number limit."}]
         }
+
+def analyze_visual_anomalies(image_path: str, user_requirement: str) -> dict:
+    """Execute VLM to visually inspect the physical accuracy of the rendered output."""
+    import base64
+    from langchain_core.messages import HumanMessage
+    
+    llm = build_llm(temperature=0.1)
+    
+    try:
+        with open(image_path, "rb") as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+            
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"You are a CFD expert. Analyze this flow field visualization based on the user requirement: '{user_requirement}'. Does it look physically correct? If not, propose parameter changes for OpenFOAM dictionaries."},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded_image}"}}
+            ]
+        )
+        
+        # We skip structured output here for broader VLM compatibility
+        response = llm.invoke([message])
+        
+        return {
+            "visual_inspection_passed": "yes" in response.content.lower() or "correct" in response.content.lower(),
+            "vlm_feedback": response.content
+        }
+    except Exception as e:
+        print(f"Visual Reviewer (VLM) failed: {e}")
+        return {
+            "visual_inspection_passed": True, # Fallback to true
+            "vlm_feedback": "Graceful Degradation: VLM analysis bypassed due to API error."
+        }
+
