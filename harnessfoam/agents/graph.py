@@ -14,16 +14,13 @@ class SimulationState(TypedDict):
     errors: int
     max_errors: int
 
+from harnessfoam.agents.architect import plan_simulation
+
 def architect_node(state: SimulationState) -> SimulationState:
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
-    state['plan'] = [
-        {"file": "blockMeshDict", "folder": "system"},
-        {"file": "controlDict", "folder": "system"},
-        {"file": "fvSchemes", "folder": "system"},
-        {"file": "fvSolution", "folder": "system"},
-        {"file": "p", "folder": "0"},
-        {"file": "U", "folder": "0"}
-    ]
+    # Call the real LangChain logic
+    state['plan'] = plan_simulation(state['prompt'])
+    print(f"Architect plan generated: {len(state['plan'])} files.")
     return state
 
 def meshing_node(state: SimulationState) -> SimulationState:
@@ -31,8 +28,13 @@ def meshing_node(state: SimulationState) -> SimulationState:
     state['mesh_job_id'] = f"mesh_{state['case_id']}_{int(time.time())}"
     return state
 
+from harnessfoam.agents.input_writer import write_simulation_inputs
+
 def input_writer_node(state: SimulationState) -> SimulationState:
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
+    # Call the real LangChain logic
+    state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'])
+    print(f"Input Writer successfully generated contents for {len(state['logs']['generated_files'])} files.")
     return state
 
 def runner_node(state: SimulationState) -> SimulationState:

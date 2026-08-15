@@ -15,15 +15,21 @@ async def create_case(user_prompt: str) -> dict:
     case_id = "case_" + os.urandom(4).hex()
     return {"case_id": case_id}
 
-@app.call_tool()
-async def plan_simulation_structure(case_id: str) -> dict:
-    """Plans the required file and directory structure based on the user prompt."""
-    return {"plan": [{"file": "blockMeshDict", "folder": "system"}]}
+from harnessfoam.agents.architect import plan_simulation
+from harnessfoam.agents.input_writer import write_simulation_inputs
 
 @app.call_tool()
-async def generate_file_content(case_id: str, file: str, folder: str) -> dict:
+async def plan_simulation_structure(case_id: str, user_prompt: str) -> dict:
+    """Plans the required file and directory structure based on the user prompt."""
+    plan = plan_simulation(user_prompt)
+    return {"plan": plan}
+
+@app.call_tool()
+async def generate_file_content(case_id: str, file: str, folder: str, user_prompt: str) -> dict:
     """Generates the content for a single specified configuration file."""
-    return {"content": f"// Auto-generated content for {file}"}
+    # To keep it simple, we wrap it into the plan format expected by input writer
+    generated = write_simulation_inputs([{"file": file, "folder": folder}], user_prompt)
+    return {"content": generated.get(f"{folder}/{file}", "")}
 
 @app.call_tool()
 async def generate_mesh(case_id: str, mesh_config: dict) -> dict:

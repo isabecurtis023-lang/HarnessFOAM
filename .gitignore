@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+HarnessFOAM.egg-info/
+.pytest_cache/
