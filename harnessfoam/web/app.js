@@ -662,7 +662,12 @@ document.addEventListener("DOMContentLoaded", () => {
         
         runBtn.disabled = true;
         runBtn.textContent = "Processing...";
-        if (stopBtn) stopBtn.style.display = "block";
+        if (stopBtn) {
+            # 2026-08-15 – Gemini 3.5 Flash: Enable Stop button and style it active red when running
+            stopBtn.disabled = false;
+            stopBtn.style.backgroundColor = "#ef4444";
+            stopBtn.style.cursor = "pointer";
+        }
         appendLog(`<span class="system">--- New Simulation Requested ---</span>`);
         
         // Use current host for websocket
@@ -736,7 +741,13 @@ document.addEventListener("DOMContentLoaded", () => {
             connectionStatus.textContent = "Disconnected";
             runBtn.disabled = false;
             runBtn.textContent = "Generate Files";
-            if (stopBtn) stopBtn.style.display = "none";
+            if (stopBtn) {
+                // 2026-08-15 – Gemini 3.5 Flash: Disable Stop button and restore default styles
+                stopBtn.disabled = true;
+                stopBtn.style.backgroundColor = "#4b5563";
+                stopBtn.style.cursor = "not-allowed";
+                stopBtn.textContent = "Stop Run / Generation";
+            }
         };
         
         ws.onerror = (err) => {
@@ -753,7 +764,12 @@ document.addEventListener("DOMContentLoaded", () => {
             
             runOpenfoamBtn.disabled = true;
             runOpenfoamBtn.textContent = "Running...";
-            if (stopBtn) stopBtn.style.display = "block";
+            if (stopBtn) {
+                // 2026-08-15 – Gemini 3.5 Flash: Enable Stop button and style it active red when running
+                stopBtn.disabled = false;
+                stopBtn.style.backgroundColor = "#ef4444";
+                stopBtn.style.cursor = "pointer";
+            }
             appendLog(`<span class="system">--- Executing Simulation ---</span>`);
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -789,7 +805,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 connectionStatus.textContent = "Disconnected";
                 runOpenfoamBtn.disabled = false;
                 runOpenfoamBtn.textContent = "Run OpenFOAM";
-                if (stopBtn) stopBtn.style.display = "none";
+                if (stopBtn) {
+                    // 2026-08-15 – Gemini 3.5 Flash: Disable Stop button and restore default styles
+                    stopBtn.disabled = true;
+                    stopBtn.style.backgroundColor = "#4b5563";
+                    stopBtn.style.cursor = "not-allowed";
+                    stopBtn.textContent = "Stop Run / Generation";
+                }
             };
         });
     }
@@ -810,8 +832,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     appendLog(`<span class="error">❌ Failed to send stop request.</span>`);
                 })
                 .finally(() => {
-                    stopBtn.disabled = false;
-                    stopBtn.textContent = "Stop Run / Generation";
                     if (ws) {
                         ws.close();
                     }
