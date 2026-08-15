@@ -71,23 +71,25 @@ body {
 }
 
 .control-panel.collapsed {
-    width: 0 !important;
-    padding: 0 !important;
-    border-right: none !important;
+    width: 60px !important;
+    padding: 2rem 0 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
     overflow: hidden;
 }
 
+.control-panel > *:not(.toggle-cp-btn) {
+    transition: opacity 0.15s ease-in-out;
+}
+
+.control-panel.collapsed > *:not(.toggle-cp-btn) {
+    opacity: 0;
+    pointer-events: none;
+}
+
 .control-panel.collapsed .toggle-cp-btn {
-    position: fixed;
-    left: 10px;
-    top: 10px;
-    background: var(--bg-panel);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    padding: 0.4rem 0.6rem;
+    right: 50%;
+    transform: translateX(50%) rotate(180deg);
     color: var(--text-main);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transform: rotate(180deg);
 }
 
 .control-panel.collapsed + #cp-resizer {
