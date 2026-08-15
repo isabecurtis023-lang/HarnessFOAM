@@ -29,6 +29,22 @@
                 <input type="text" id="output_dir" value="demo_run_web">
             </div>
             
+            <details class="advanced-settings">
+                <summary>⚙️ Advanced API Settings</summary>
+                <div class="input-group">
+                    <label for="api_base">Custom API Base URL</label>
+                    <input type="text" id="api_base" placeholder="https://api.openai.com/v1">
+                </div>
+                <div class="input-group">
+                    <label for="model_name">Model Name</label>
+                    <input type="text" id="model_name" placeholder="gpt-4o">
+                </div>
+                <div class="input-group">
+                    <label for="api_key">API Key (Local Session)</label>
+                    <input type="password" id="api_key" placeholder="sk-...">
+                </div>
+            </details>
+            
             <button id="run-btn" class="primary-btn">Initialize Simulation</button>
             
             <div class="status-indicator">

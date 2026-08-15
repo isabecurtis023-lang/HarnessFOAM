@@ -233,3 +233,22 @@ textarea:focus, input:focus {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+.advanced-settings {
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.advanced-settings summary {
+    cursor: pointer;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.advanced-settings .input-group {
+    margin-bottom: 0.75rem;
+    margin-top: 0.5rem;
+}
+.advanced-settings input {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}

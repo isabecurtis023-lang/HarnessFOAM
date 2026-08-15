@@ -37,6 +37,15 @@ async def websocket_endpoint(websocket: WebSocket):
         prompt = data.get("prompt", "")
         output_dir = data.get("output_dir", "demo_run_web")
         
+        # Parse advanced API settings
+        api_base = data.get("api_base")
+        model = data.get("model")
+        api_key = data.get("api_key")
+        
+        if api_base: os.environ["OPENAI_API_BASE"] = api_base
+        if model: os.environ["LLM_MODEL"] = model
+        if api_key: os.environ["OPENAI_API_KEY"] = api_key
+        
         await websocket.send_json({"type": "info", "message": f"Initializing workflow for: {prompt}"})
         
         workflow = create_workflow()

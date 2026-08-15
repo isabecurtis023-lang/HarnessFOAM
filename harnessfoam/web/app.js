@@ -36,11 +36,21 @@ document.addEventListener("DOMContentLoaded", () => {
         
         ws = new WebSocket(wsUrl);
         
+        const apiBase = document.getElementById("api_base").value.trim();
+        const modelName = document.getElementById("model_name").value.trim();
+        const apiKey = document.getElementById("api_key").value.trim();
+        
         ws.onopen = () => {
             connectionDot.classList.add("connected");
             connectionStatus.textContent = "Connected";
             // Send request payload
-            ws.send(JSON.stringify({ prompt, output_dir: outputDir }));
+            ws.send(JSON.stringify({ 
+                prompt, 
+                output_dir: outputDir,
+                api_base: apiBase,
+                model: modelName,
+                api_key: apiKey
+            }));
         };
         
         ws.onmessage = (event) => {
