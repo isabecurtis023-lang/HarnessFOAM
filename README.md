@@ -116,8 +116,8 @@ cp .env.example .env
 Ensure your `.env` contains valid OpenAI or compatible (such as CSTCloud) credentials:
 ```env
 OPENAI_API_KEY=your_api_key
-OPENAI_API_BASE=https://uni-api.cstcloud.cn/v1
-LLM_MODEL=deepseek-v4-flash
+OPENAI_API_BASE=your_base_url
+LLM_MODEL=your_model_name
 ```
 
 ### Launching serves
