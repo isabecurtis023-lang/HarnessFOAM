@@ -663,7 +663,7 @@ document.addEventListener("DOMContentLoaded", () => {
         runBtn.disabled = true;
         runBtn.textContent = "Processing...";
         if (stopBtn) {
-            # 2026-08-15 – Gemini 3.5 Flash: Enable Stop button and style it active red when running
+            // 2026-08-15 – Gemini 3.5 Flash: Enable Stop button and style it active red when running
             stopBtn.disabled = false;
             stopBtn.style.backgroundColor = "#ef4444";
             stopBtn.style.cursor = "pointer";
