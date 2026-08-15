@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const consoleOutput = document.getElementById("console-output");
     const connectionDot = document.getElementById("connection-dot");
     const connectionStatus = document.getElementById("connection-status");
+    const stopBtn = document.getElementById("stop-btn");
     
     let ws = null;
 
@@ -661,6 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         runBtn.disabled = true;
         runBtn.textContent = "Processing...";
+        if (stopBtn) stopBtn.style.display = "block";
         appendLog(`<span class="system">--- New Simulation Requested ---</span>`);
         
         // Use current host for websocket
@@ -734,6 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
             connectionStatus.textContent = "Disconnected";
             runBtn.disabled = false;
             runBtn.textContent = "Generate Files";
+            if (stopBtn) stopBtn.style.display = "none";
         };
         
         ws.onerror = (err) => {
@@ -750,6 +753,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             runOpenfoamBtn.disabled = true;
             runOpenfoamBtn.textContent = "Running...";
+            if (stopBtn) stopBtn.style.display = "block";
             appendLog(`<span class="system">--- Executing Simulation ---</span>`);
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -785,7 +789,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 connectionStatus.textContent = "Disconnected";
                 runOpenfoamBtn.disabled = false;
                 runOpenfoamBtn.textContent = "Run OpenFOAM";
+                if (stopBtn) stopBtn.style.display = "none";
             };
+        });
+    }
+
+    // 2026-08-15 – Gemini 3.5 Flash: Stop / Cancel Button Logic
+    if (stopBtn) {
+        stopBtn.addEventListener("click", () => {
+            stopBtn.disabled = true;
+            stopBtn.textContent = "Stopping...";
+            
+            fetch("/api/stop", { method: "POST" })
+                .then(resp => resp.json())
+                .then(data => {
+                    appendLog(`<span class="error">❌ Execution stopped by user.</span>`);
+                })
+                .catch(err => {
+                    console.error("Failed to stop execution:", err);
+                    appendLog(`<span class="error">❌ Failed to send stop request.</span>`);
+                })
+                .finally(() => {
+                    stopBtn.disabled = false;
+                    stopBtn.textContent = "Stop Run / Generation";
+                    if (ws) {
+                        ws.close();
+                    }
+                });
         });
     }
 
