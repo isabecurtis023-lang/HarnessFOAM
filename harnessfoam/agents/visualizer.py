@@ -28,10 +28,11 @@ Output ONLY the structured JSON. Do not provide explanations.
     chain = prompt | llm.with_structured_output(VisualizationScriptResult)
     return chain
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def generate_visualization_script(prompt_text: str) -> dict:
     """Execute the visualization agent to determine rendering needs and generate scripts."""
-    chain = build_visualizer_agent()
     try:
+        chain = build_visualizer_agent()
         result = chain.invoke({"user_requirement": prompt_text})
         return {
             "is_visualization_required": result.is_visualization_required,

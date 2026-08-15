@@ -36,11 +36,11 @@ Make sure you generate all the necessary files for the user's requirements.
     # We use with_structured_output to enforce JSON output matching ArchitectPlan
     chain = prompt | llm.with_structured_output(ArchitectPlan)
     return chain
-
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def plan_simulation(prompt_text: str) -> List[dict]:
     """Execute the architect agent to get a structured plan."""
-    chain = build_architect_agent()
     try:
+        chain = build_architect_agent()
         result = chain.invoke({"user_requirement": prompt_text})
         return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
     except Exception as e:

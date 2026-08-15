@@ -2,10 +2,14 @@ from typing import TypedDict, List, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 import time
 
-class SimulationState(TypedDict):
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
+class SimulationState(TypedDict, total=False):
     prompt: str
+    user_requirement: str
     case_id: str
+    case_dir: str
     plan: List[Dict[str, str]]
+    file_plan: List[Dict[str, str]]
     mesh_job_id: Optional[str]
     run_job_id: Optional[str]
     viz_job_id: Optional[str]
@@ -13,20 +17,40 @@ class SimulationState(TypedDict):
     logs: Dict[str, Any]
     errors: int
     max_errors: int
+    current_step: str
 
 from harnessfoam.agents.architect import plan_simulation
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def architect_node(state: SimulationState) -> SimulationState:
+    # Normalize state for backward compatibility
+    if 'prompt' not in state and 'user_requirement' in state:
+        state['prompt'] = state['user_requirement']
+    if 'case_id' not in state and 'case_dir' in state:
+        state['case_id'] = state['case_dir']
+    if 'logs' not in state:
+        state['logs'] = {}
+    if 'errors' not in state:
+        state['errors'] = 0
+    if 'max_errors' not in state:
+        state['max_errors'] = 3
+    if 'status' not in state:
+        state['status'] = 'PENDING'
+    state['current_step'] = 'architect'
+
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
     # Call the real LangChain logic
     state['plan'] = plan_simulation(state['prompt'])
+    state['file_plan'] = state['plan']
     print(f"Architect plan generated: {len(state['plan'])} files.")
     return state
 
 from harnessfoam.agents.meshing import generate_mesh_script
 from harnessfoam.agents.visualizer import generate_visualization_script
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def meshing_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'meshing'
     print(f"Meshing Agent: Generating mesh for case {state['case_id']}")
     
     # Call real LangChain logic for meshing
@@ -43,17 +67,22 @@ def meshing_node(state: SimulationState) -> SimulationState:
 
 from harnessfoam.agents.input_writer import write_simulation_inputs
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def input_writer_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'input_writer'
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
     # Call the real LangChain logic
     state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'])
+    state['file_plan'] = state['plan']
     print(f"Input Writer successfully generated contents for {len(state['logs']['generated_files'])} files.")
     return state
 
 from harnessfoam.agents.runner import generate_hpc_script
 from harnessfoam.agents.reviewer import analyze_errors
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def runner_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'runner'
     print(f"Runner Agent: Submitting simulation job...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
@@ -68,7 +97,9 @@ def runner_node(state: SimulationState) -> SimulationState:
         state['logs']['execution_error'] = "--> FOAM FATAL ERROR:\nCourant number exceeded 1.0"
     return state
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def reviewer_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'reviewer'
     print(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
     
@@ -79,7 +110,9 @@ def reviewer_node(state: SimulationState) -> SimulationState:
     print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def visualizer_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'visualizer'
     print(f"Visualization Agent: Generating visuals...")
     
     # Call real LangChain logic for visualization
@@ -94,11 +127,14 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def should_review(state: SimulationState) -> str:
     if state['status'] == 'FAILED' and state['errors'] < state['max_errors']:
         return "review"
     elif state['status'] == 'FAILED':
+        state['current_step'] = 'end'
         return "fail"
+    state['current_step'] = 'end'
     return "visualize"
 
 def create_workflow() -> StateGraph:

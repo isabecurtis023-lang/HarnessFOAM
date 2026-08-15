@@ -29,9 +29,9 @@ Ensure all required values are present. Provide ONLY the code content in your re
     chain = prompt | llm.with_structured_output(FileContentResult)
     return chain
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def write_simulation_inputs(plan: List[Dict[str, str]], prompt_text: str) -> Dict[str, str]:
     """Execute the input writer agent to generate file contents."""
-    chain = build_input_writer_agent()
     generated_files = {}
     
     for item in plan:
@@ -43,6 +43,7 @@ def write_simulation_inputs(plan: List[Dict[str, str]], prompt_text: str) -> Dic
         context_str = "\n".join([f"--- {k} ---\n{v}\n" for k, v in generated_files.items()])
         
         try:
+            chain = build_input_writer_agent()
             result = chain.invoke({
                 "file_name": file_name,
                 "folder_name": folder_name,

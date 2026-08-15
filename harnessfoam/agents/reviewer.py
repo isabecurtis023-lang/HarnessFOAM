@@ -37,10 +37,11 @@ Provide the response in the structured format required.
     chain = prompt | llm.with_structured_output(ReviewResult)
     return chain
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def analyze_errors(error_logs: str) -> dict:
     """Execute the reviewer agent to analyze logs and suggest fixes."""
-    chain = build_reviewer_agent()
     try:
+        chain = build_reviewer_agent()
         result = chain.invoke({"error_logs": error_logs})
         return {
             "is_resolved": result.is_resolved,
