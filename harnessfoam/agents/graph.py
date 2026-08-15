@@ -23,13 +23,19 @@ class SimulationState(TypedDict, total=False):
 
 from harnessfoam.agents.architect import plan_simulation
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
+# 2026-08-15 | Gemini 3.5 Flash (Low)
 def architect_node(state: SimulationState) -> SimulationState:
     # Normalize state for backward compatibility
     if 'prompt' not in state and 'user_requirement' in state:
         state['prompt'] = state['user_requirement']
     if 'case_id' not in state and 'case_dir' in state:
         state['case_id'] = state['case_dir']
+    if 'case_dir' not in state and 'case_id' in state:
+        state['case_dir'] = state['case_id']
+    
+    # 2026-08-15 | Gemini 3.5 Flash (Low)
+    if state.get('case_dir') and state['case_dir'].startswith('demo_') and not state['case_dir'].startswith('demo/'):
+        state['case_dir'] = f"demo/{state['case_dir']}"
     if 'logs' not in state:
         state['logs'] = {}
     if 'errors' not in state:
@@ -62,11 +68,23 @@ def meshing_node(state: SimulationState) -> SimulationState:
 
 from harnessfoam.agents.input_writer import write_simulation_inputs
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
+# 2026-08-15 | Gemini 3.5 Flash (Low)
 def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
     state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'])
+    
+    # Write files to disk
+    import os
+    case_dir = state.get('case_dir')
+    if case_dir:
+        os.makedirs(case_dir, exist_ok=True)
+        for rel_path, content in state['logs']['generated_files'].items():
+            full_path = os.path.join(case_dir, rel_path)
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            with open(full_path, "w") as f:
+                f.write(content)
+                
     state['file_plan'] = state['plan']
     return state
 
@@ -131,14 +149,17 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state
 
-# 2026-08-15 | Gemini 3.5 Flash (Medium)
+# 2026-08-15 | Gemini 3.5 Flash (Low)
+def end_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'end'
+    return state
+
+# 2026-08-15 | Gemini 3.5 Flash (Low)
 def should_review(state: SimulationState) -> str:
     if state['status'] == 'FAILED' and state['errors'] < state['max_errors']:
         return "review"
     elif state['status'] == 'FAILED':
-        state['current_step'] = 'end'
         return "fail"
-    state['current_step'] = 'end'
     return "visualize"
 
 def create_workflow() -> StateGraph:
@@ -150,6 +171,7 @@ def create_workflow() -> StateGraph:
     workflow.add_node("runner", runner_node)
     workflow.add_node("reviewer", reviewer_node)
     workflow.add_node("visualizer", visualizer_node)
+    workflow.add_node("end", end_node)
     
     workflow.set_entry_point("architect")
     workflow.add_edge("architect", "meshing")
@@ -162,10 +184,11 @@ def create_workflow() -> StateGraph:
         {
             "review": "reviewer",
             "visualize": "visualizer",
-            "fail": END
+            "fail": "end"
         }
     )
     workflow.add_edge("reviewer", "input_writer") # Reviewer fixes and resubmits
-    workflow.add_edge("visualizer", END)
+    workflow.add_edge("visualizer", "end")
+    workflow.add_edge("end", END)
     
     return workflow.compile()
