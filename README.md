@@ -55,7 +55,7 @@ graph TD
     I --> H
 ```
 
-1. **State Propagation** – A unified `llm_kwargs` dict is sent across all agents, ensuring runtime model overrides (e.g. `deepseek-v4-flash`, `minimax-m27`, `qwen3.5`) are consistently respected.
+1. **State Propagation** – A unified `llm_kwargs` dict is sent across all agents, ensuring runtime model overrides (e.g. `gpt-4o`, `claude-3-5-sonnet`, `gemini-2.5-pro`, `deepseek-v4-flash`, `minimax-m27`, `qwen3.5`) are consistently respected.
 2. **Error Feedback Loops** – If a simulation run crashes, the environment logs are routed to the **Reviewer**, which writes suggestions, updates files, and commands the **Input Writer** to recompile config files.
 
 ---
@@ -154,6 +154,28 @@ We are continuously advancing HarnessFOAM to make CFD engineering fully autonomo
 * **Neural Surrogate Solvers** – Integrate Physics-Informed Neural Network (PINN) surrogates as an alternative to traditional solvers, providing instant flow estimations (up to 100x faster).
 * **VLM CAD Optimization Loops** – Create a continuous CAD-to-CFD loop where the Reviewer agent adjusts Gmsh geometry coordinates dynamically until lift-to-drag or thermal dissipation bounds are satisfied.
 * **Dynamic Mesh Refinement** – Implement an adaptive mesh refinement node that increases grid resolution only in regions of high shear stress or pressure gradients.
+
+---
+
+## 📚 Related Papers
+
+If you are interested in LLM-driven CFD automation, check out these related publications:
+
+* **MetaOpenFOAM** – *MetaOpenFOAM: an LLM-based multi-agent framework for CFD* (Chen et al., [arXiv:2407.21320](https://arxiv.org/abs/2407.21320), Jul 2024)
+* **MetaOpenFOAM 2.0** – *MetaOpenFOAM 2.0: Large Language Model Driven Chain of Thought for Automating CFD Simulation and Post-Processing* (Chen et al., [arXiv:2502.00498](https://arxiv.org/abs/2502.00498), Feb 2025)
+* **OptMetaOpenFOAM** – *OptMetaOpenFOAM: Large Language Model Driven Chain of Thought for Sensitivity Analysis and Parameter Optimization based on CFD* (Chen et al., [arXiv:2503.01273](https://arxiv.org/abs/2503.01273), Mar 2025)
+* **IteraSim RAG** – *IteraSim RAG: A Multi-Stage Retrieval-Augmented Agentic Back-End for OpenFOAM-Based Computational Fluid Dynamics* (Kumar, [arXiv:2607.20346](https://arxiv.org/abs/2607.20346), Jul 2026)
+* **AutoFOAM** – *AutoFOAM: The Self-Refining Autonomous OpenFOAM Agent* (Neelan et al., [arXiv:2608.00003](https://arxiv.org/abs/2608.00003), May 2026)
+* **PhyNiKCE** – *PhyNiKCE: A Neurosymbolic Agentic Framework for Autonomous Computational Fluid Dynamics* (Fan et al., [arXiv:2602.11666](https://arxiv.org/abs/2602.11666), Feb 2026)
+* **TurboAgent** – *TurboAgent: An LLM-Driven Autonomous Multi-Agent Framework for Turbomachinery Aerodynamic Design* (Du et al., [arXiv:2604.06747](https://arxiv.org/abs/2604.06747), Apr 2026)
+* **FlamePilot** – *Towards LLM-enabled autonomous combustion research: A literature-aware agent for self-corrective modeling workflows* (Xiao et al., [arXiv:2601.01357](https://arxiv.org/abs/2601.01357), Jan 2026)
+* **ChatCFD** – *ChatCFD: An LLM-Driven Agent for End-to-End CFD Automation with Structured Knowledge and Reasoning* (Fan et al., [arXiv:2506.02019](https://arxiv.org/abs/2506.02019), May 2025)
+* **Foam-Agent** – *Foam-Agent: A Large Language Model-Based Multi-Agent Framework for Automating Computational Fluid Dynamics Workflows* (Yue et al., [arXiv:2505.04997](https://arxiv.org/abs/2505.04997), May 2025)
+* **AutoCFD / NL2FOAM** – *Fine-tuning a Large Language Model for Automating Computational Fluid Dynamics Simulations* (Dong et al., [arXiv:2504.09602](https://arxiv.org/abs/2504.09602), Apr 2025)
+* **CFDLLMBench** – *CFDLLMBench: A Benchmark Suite for Evaluating Large Language Models in Computational Fluid Dynamics* (Somasekharan et al., [arXiv:2509.20374](https://arxiv.org/abs/2509.20374), Sep 2025)
+* **CFD-copilot** – *CFD-copilot: leveraging domain-adapted large language model and model context protocol to enhance simulation automation* (Dong et al., [arXiv:2512.07917](https://arxiv.org/abs/2512.07917), Dec 2025)
+
+*Note: If the above literature has omitted your important work, please do not hesitate to contact me.*
 
 ---
 
