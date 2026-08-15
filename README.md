@@ -2,8 +2,9 @@
 
 <div align="center">
 
-**An End‑to‑End Composable Multi‑Agent Framework for Automating CFD Simulation in OpenFOAM**
-
+**An End-to-End Composable Multi-Agent Framework for Autonomous CFD Simulations in OpenFOAM.**
+<br>
+*Powered by LangGraph, the Model Context Protocol (MCP), and Vision-Language Models.*
 ![Architecture Diagram](assets/harnessfoam_architecture.jpg)
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://python.org) 
