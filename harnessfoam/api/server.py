@@ -292,10 +292,60 @@ def llm_status(api_base: str = "", api_key: str = ""):
     except Exception as e:
         return {"status": "error", "message": "Connection Failed"}
 
-async def install_openfoam(websocket: WebSocket):
+# 2026-08-15 – Gemini 3.5 Flash: Helper to run a command and stream output without using asyncio subprocesses (prevents NotImplementedError on Windows)
+async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket: WebSocket):
     import subprocess
-    import shutil
+    import threading
+    import queue
+    import asyncio
     import json
+    
+    q = queue.Queue()
+    
+    def read_output(proc, q):
+        try:
+            for line in iter(proc.stdout.readline, ''):
+                q.put(line)
+        finally:
+            proc.stdout.close()
+            q.put(None)
+            
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            encoding="utf-8",
+            errors="replace"
+        )
+        
+        t = threading.Thread(target=read_output, args=(proc, q), daemon=True)
+        t.start()
+        
+        loop = asyncio.get_running_loop()
+        while True:
+            line = await loop.run_in_executor(None, q.get)
+            if line is None:
+                break
+            await websocket.send_text(json.dumps({
+                "type": "step",
+                "agent": agent_name,
+                "message": line.strip()
+            }))
+            
+        await loop.run_in_executor(None, proc.wait)
+        return proc.returncode
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise e
+
+async def install_openfoam(websocket: WebSocket):
+    import json
+    import shutil
     
     await websocket.send_text(json.dumps({
         "type": "info",
@@ -316,22 +366,12 @@ async def install_openfoam(websocket: WebSocket):
     }))
     
     # Run apt-get update
-    process1 = await asyncio.create_subprocess_exec(
-        "wsl", "-u", "root", "apt-get", "update",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT
+    rc1 = await run_command_and_stream(
+        ["wsl", "-u", "root", "apt-get", "update"],
+        cwd=None,
+        agent_name="Installer",
+        websocket=websocket
     )
-    
-    while True:
-        line = await process1.stdout.readline()
-        if not line:
-            break
-        await websocket.send_text(json.dumps({
-            "type": "step",
-            "agent": "Installer",
-            "message": line.decode('utf-8', errors='replace').strip()
-        }))
-    await process1.wait()
     
     await websocket.send_text(json.dumps({
         "type": "step",
@@ -340,24 +380,14 @@ async def install_openfoam(websocket: WebSocket):
     }))
     
     # Run apt-get install
-    process2 = await asyncio.create_subprocess_exec(
-        "wsl", "-u", "root", "apt-get", "install", "-y", "openfoam",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT
+    rc2 = await run_command_and_stream(
+        ["wsl", "-u", "root", "apt-get", "install", "-y", "openfoam"],
+        cwd=None,
+        agent_name="Installer",
+        websocket=websocket
     )
     
-    while True:
-        line = await process2.stdout.readline()
-        if not line:
-            break
-        await websocket.send_text(json.dumps({
-            "type": "step",
-            "agent": "Installer",
-            "message": line.decode('utf-8', errors='replace').strip()
-        }))
-    await process2.wait()
-    
-    if process2.returncode == 0:
+    if rc2 == 0:
         await websocket.send_text(json.dumps({
             "type": "complete",
             "message": "OpenFOAM successfully installed in WSL! Please refresh the page.",
@@ -366,7 +396,7 @@ async def install_openfoam(websocket: WebSocket):
     else:
         await websocket.send_text(json.dumps({
             "type": "error",
-            "message": f"Installation failed with exit code {process2.returncode}"
+            "message": f"Installation failed with exit code {rc2}"
         }))
 
 @app.websocket("/api/stream")
@@ -456,22 +486,21 @@ echo "Simulation complete!"
             wsl_cwd = re.sub(r"^([a-zA-Z]):", lambda m: f"/mnt/{m.group(1).lower()}", wsl_cwd)
             
             try:
-                if shutil.which("wsl"):
-                    process = await asyncio.create_subprocess_exec(
-                        "wsl", "bash", "-c", f"cd '{wsl_cwd}' && bash ./Allrun",
-                        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
-                    )
+                cmd = ["wsl", "bash", "-c", f"cd '{wsl_cwd}' && bash ./Allrun"] if shutil.which("wsl") else ["sh", "./Allrun"]
+                # Cwd is Windows cwd when running under Windows (non-WSL) or wsl.exe wrapper
+                run_cwd = cwd if not shutil.which("wsl") else None
+                
+                rc = await run_command_and_stream(
+                    cmd,
+                    cwd=run_cwd,
+                    agent_name="OpenFOAM",
+                    websocket=websocket
+                )
+                
+                if rc == 0:
+                    await websocket.send_json({"type": "complete", "message": "Simulation execution completed successfully!"})
                 else:
-                    process = await asyncio.create_subprocess_exec(
-                        "sh", "./Allrun",
-                        cwd=cwd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT
-                    )
-                while True:
-                    line = await process.stdout.readline()
-                    if not line: break
-                    await websocket.send_json({"type": "step", "agent": "OpenFOAM", "message": line.decode('utf-8', errors='replace').strip()})
-                await process.wait()
-                await websocket.send_json({"type": "complete", "message": "Simulation execution completed!"})
+                    await websocket.send_json({"type": "error", "message": f"Simulation execution exited with code {rc}"})
             except Exception as e:
                 import traceback
                 traceback.print_exc()
