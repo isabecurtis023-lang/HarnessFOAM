@@ -559,6 +559,69 @@ echo "Simulation complete!"
             await websocket.close()
             return
 
+        if data.get("action") == "postprocess":
+            # 2026-08-15 – Gemini 3.5 Flash: Implement manual post-processing streaming
+            cwd = data.get("output_dir")
+            await websocket.send_json({"type": "info", "message": f"Starting post-processing execution in {cwd}..."})
+            
+            import sys
+            script_path = os.path.join(cwd, "viz_postprocess.py")
+            if not os.path.exists(script_path):
+                await websocket.send_json({"type": "error", "message": "viz_postprocess.py not found in output directory. Make sure you run the simulation first."})
+                await websocket.close()
+                return
+                
+            case_foam_path = os.path.join(cwd, "case.foam")
+            if not os.path.exists(case_foam_path):
+                try:
+                    with open(case_foam_path, "w") as f:
+                        pass
+                except Exception as e:
+                    print(f"Failed to create case.foam: {e}")
+                    
+            try:
+                with open(script_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "reader.update()" in content:
+                    content = content.replace("reader.update()", "# reader.update()")
+                    with open(script_path, "w", encoding="utf-8") as f:
+                        f.write(content)
+            except Exception as e:
+                print(f"Failed to patch reader.update(): {e}")
+                
+            cmd = [sys.executable, "viz_postprocess.py"]
+            rc = await run_command_and_stream(
+                cmd,
+                cwd=cwd,
+                agent_name="Visualizer",
+                websocket=websocket
+            )
+            
+            if rc == 0:
+                img_path = os.path.join(cwd, "visualization.png")
+                img_base64 = ""
+                if os.path.exists(img_path):
+                    try:
+                        import base64
+                        with open(img_path, "rb") as image_file:
+                            img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                    except Exception as e:
+                        print(f"Failed to read visualization.png: {e}")
+                
+                payload = {
+                    "type": "complete",
+                    "message": "Post-processing completed successfully!",
+                    "directory": cwd
+                }
+                if img_base64:
+                    payload["image_base64"] = img_base64
+                await websocket.send_json(payload)
+            else:
+                await websocket.send_json({"type": "error", "message": f"Post-processing exited with code {rc}"})
+                
+            await websocket.close()
+            return
+
         prompt = data.get("prompt", "")
         output_dir = data.get("output_dir", "demo_run_web")
         

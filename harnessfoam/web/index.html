@@ -42,10 +42,12 @@
             
             <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Stack buttons vertically, always show Run OpenFOAM -->
-                <button id="run-btn" class="primary-btn" style="width: 100%; margin-top: 0;">Generate Files</button>
+                <button id="run-btn" class="primary-btn" style="width: 100%; margin-top: 0;">Deep driving</button>
                 <button id="run-openfoam-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #10b981;">Run OpenFOAM</button>
+                <!-- 2026-08-15 – Gemini 3.5 Flash: Add Post-Process button, disabled by default -->
+                <button id="postprocess-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Post-Process</button>
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Always show Stop button, disabled by default -->
-                <button id="stop-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Stop Run / Generation</button>
+                <button id="stop-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Stop</button>
             </div>
 
             
@@ -62,6 +64,10 @@
                 <div class="status-indicator">
                     <div class="dot" id="connection-dot"></div>
                     <span id="connection-status">Agent Connection: Disconnected</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="dot" style="background-color: #8b5cf6;"></div>
+                    <span id="uptime-status">Uptime: 00:00:00</span>
                 </div>
             </div>
             <button id="settings-bottom-btn" class="secondary-btn" style="margin-top: 0.5rem; width: 100%; height: 2.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;" title="Settings">⚙️ Setting</button>
@@ -107,7 +113,7 @@
         </div>
         
         <!-- File Explorer Sidebar -->
-        <aside class="file-explorer" id="file-explorer" style="display: none;">
+            <aside class="file-explorer" id="file-explorer" style="display: flex;">
             <div class="explorer-header">
                 <h3>Project Files</h3>
                 <button id="refresh-files-btn" class="icon-btn" title="Refresh folder">🔄</button>
@@ -119,7 +125,7 @@
             </div>
         </aside>
         
-        <div class="resizer" id="sidebar-resizer" style="display: none;"></div>
+        <div class="resizer" id="sidebar-resizer"></div>
         
         <!-- Main Terminal / Chat Area -->
         <main class="terminal-container">

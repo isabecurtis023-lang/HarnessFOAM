@@ -6,8 +6,61 @@ document.addEventListener("DOMContentLoaded", () => {
     const connectionDot = document.getElementById("connection-dot");
     const connectionStatus = document.getElementById("connection-status");
     const stopBtn = document.getElementById("stop-btn");
+    const postprocessBtn = document.getElementById("postprocess-btn");
+    const runOpenfoamBtn = document.getElementById("run-openfoam-btn");
     
     let ws = null;
+
+    // 2026-08-15 – Gemini 3.5 Flash: Centralized function to manage button states and colors based on directory & run status
+    function updateButtonStates() {
+        const hasOutputDir = outputDirInput && outputDirInput.value.trim();
+        const isRunning = ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING);
+        
+        if (!isRunning) {
+            if (runBtn) {
+                runBtn.disabled = false;
+                runBtn.textContent = "Deep driving";
+            }
+            
+            if (runOpenfoamBtn) {
+                runOpenfoamBtn.disabled = !hasOutputDir;
+                runOpenfoamBtn.style.backgroundColor = hasOutputDir ? "#10b981" : "#4b5563";
+                runOpenfoamBtn.style.cursor = hasOutputDir ? "pointer" : "not-allowed";
+            }
+            
+            if (postprocessBtn) {
+                postprocessBtn.disabled = !hasOutputDir;
+                postprocessBtn.style.backgroundColor = hasOutputDir ? "#a855f7" : "#4b5563";
+                postprocessBtn.style.cursor = hasOutputDir ? "pointer" : "not-allowed";
+            }
+            
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.style.backgroundColor = "#4b5563";
+                stopBtn.style.cursor = "not-allowed";
+                stopBtn.textContent = "Stop";
+            }
+        } else {
+            if (runBtn) {
+                runBtn.disabled = true;
+            }
+            if (runOpenfoamBtn) {
+                runOpenfoamBtn.disabled = true;
+                runOpenfoamBtn.style.backgroundColor = "#4b5563";
+                runOpenfoamBtn.style.cursor = "not-allowed";
+            }
+            if (postprocessBtn) {
+                postprocessBtn.disabled = true;
+                postprocessBtn.style.backgroundColor = "#4b5563";
+                postprocessBtn.style.cursor = "not-allowed";
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                stopBtn.style.backgroundColor = "#ef4444";
+                stopBtn.style.cursor = "pointer";
+            }
+        }
+    }
 
     // 2026-08-15 – Gemini 3.5 Flash: Sidebar collapse toggle logic
     const toggleCpBtn = document.getElementById("toggle-cp-btn");
@@ -98,16 +151,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     checkOFStatus();
+    // 2026-08-15 – Gemini 3.5 Flash: Initial button states update
+    updateButtonStates();
 
-    // Auto-set CWD
-    fetch('/api/cwd')
-        .then(r => r.json())
-        .then(data => {
-            if (data.cwd && (!outputDirInput.value || outputDirInput.value === "demo_run_web")) {
-                outputDirInput.value = data.cwd;
-                loadRootTree(data.cwd);
-            }
-        });
+    // Auto-set CWD or load from localStorage
+    const savedOutputDir = localStorage.getItem("harnessfoam_output_dir");
+    if (savedOutputDir) {
+        outputDirInput.value = savedOutputDir;
+        loadRootTree(savedOutputDir);
+        updateButtonStates();
+    } else {
+        fetch('/api/cwd')
+            .then(r => r.json())
+            .then(data => {
+                if (data.cwd && (!outputDirInput.value || outputDirInput.value === "demo_run_web")) {
+                    outputDirInput.value = data.cwd;
+                    loadRootTree(data.cwd);
+                }
+                updateButtonStates();
+            });
+    }
         
     // Check LLM API Status
     const llmDot = document.getElementById("llm-dot");
@@ -175,7 +238,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
                 if (data.path) {
                     outputDirInput.value = data.path;
+                    localStorage.setItem("harnessfoam_output_dir", data.path);
                     loadRootTree(data.path);
+                    updateButtonStates();
                 }
             } catch (err) {
                 console.error("Failed to browse folder:", err);
@@ -194,9 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Output dir change listener
     outputDirInput.addEventListener("change", () => {
-        if (outputDirInput.value.trim()) {
-            loadRootTree(outputDirInput.value.trim());
+        const val = outputDirInput.value.trim();
+        if (val) {
+            localStorage.setItem("harnessfoam_output_dir", val);
+            loadRootTree(val);
         }
+        updateButtonStates();
     });
 
     // Initial load if populated
@@ -737,18 +805,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         
         ws.onclose = () => {
-            connectionDot.classList.remove("connected");
-            connectionStatus.textContent = "Disconnected";
-            runBtn.disabled = false;
-            runBtn.textContent = "Generate Files";
-            if (stopBtn) {
-                // 2026-08-15 – Gemini 3.5 Flash: Disable Stop button and restore default styles
-                stopBtn.disabled = true;
-                stopBtn.style.backgroundColor = "#4b5563";
-                stopBtn.style.cursor = "not-allowed";
-                stopBtn.textContent = "Stop Run / Generation";
-            }
-        };
+    connectionDot.classList.remove("connected");
+    connectionStatus.textContent = "Disconnected";
+    // Reset UI states
+    updateButtonStates();
+};
         
         ws.onerror = (err) => {
             appendLog(`<span class="error">❌ WebSocket connection error. Ensure FastAPI backend is running.</span>`);
@@ -756,7 +817,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Run OpenFOAM Button Logic
-    const runOpenfoamBtn = document.getElementById("run-openfoam-btn");
     if (runOpenfoamBtn) {
         runOpenfoamBtn.addEventListener("click", () => {
             const outputDir = outputDirInput.value.trim();
@@ -814,6 +874,50 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             };
         });
+
+        // Postprocess Button Logic
+        if (postprocessBtn) {
+            postprocessBtn.addEventListener("click", () => {
+                const outputDir = outputDirInput.value.trim();
+                if (!outputDir) return;
+                postprocessBtn.disabled = true;
+                postprocessBtn.textContent = "Processing...";
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/api/stream`;
+                ws = new WebSocket(wsUrl);
+                ws.onopen = () => {
+                    connectionDot.classList.add("connected");
+                    connectionStatus.textContent = "Connected";
+                    ws.send(JSON.stringify({ action: "postprocess", output_dir: outputDir }));
+                };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "info") {
+                        appendLog(`<span class="info">ℹ️ ${data.message}</span>`);
+                    } else if (data.type === "step") {
+                        appendLog(`<span class="log-agent agent-Runner">[${data.agent}]</span> <span>${data.message}</span>`);
+                    } else if (data.type === "complete") {
+                        appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
+                        if (data.image_base64) {
+                            appendLog(`<span class="info">📸 Visualizer Output:</span>`);
+                            appendLog(`<img src="data:image/png;base64,${data.image_base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">`);
+                        }
+                        ws.close();
+                    } else if (data.type === "error") {
+                        appendLog(`<span class="error">❌ Error: ${data.message}</span>`);
+                        ws.close();
+                    }
+                };
+                ws.onclose = () => {
+                    connectionDot.classList.remove("connected");
+                    connectionStatus.textContent = "Disconnected";
+                    updateButtonStates();
+                };
+                ws.onerror = (err) => {
+                    appendLog(`<span class="error">❌ WebSocket connection error. Ensure FastAPI backend is running.</span>`);
+                };
+            });
+        }
     }
 
     // 2026-08-15 – Gemini 3.5 Flash: Stop / Cancel Button Logic
@@ -1126,6 +1230,19 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             alert("Network error deleting item");
         }
+    }
+
+    // Uptime Tracking Logic
+    const uptimeElement = document.getElementById("uptime-status");
+    if (uptimeElement) {
+        const startTime = Date.now();
+        setInterval(() => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const secs = String(diff % 60).padStart(2, '0');
+            uptimeElement.textContent = `Uptime: ${hrs}:${mins}:${secs}`;
+        }, 1000);
     }
 
 });
