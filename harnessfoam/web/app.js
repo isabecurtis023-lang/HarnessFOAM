@@ -16,6 +16,22 @@ document.addEventListener("DOMContentLoaded", () => {
         consoleOutput.appendChild(div);
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }
+    
+    // Add logic for Browse button
+    const browseBtn = document.getElementById("browse-btn");
+    if (browseBtn) {
+        browseBtn.addEventListener("click", async () => {
+            try {
+                const response = await fetch('/api/browse_folder');
+                const data = await response.json();
+                if (data.path) {
+                    outputDirInput.value = data.path;
+                }
+            } catch (err) {
+                console.error("Failed to browse folder:", err);
+            }
+        });
+    }
 
     runBtn.addEventListener("click", () => {
         const prompt = promptInput.value.trim();

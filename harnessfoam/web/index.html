@@ -25,25 +25,28 @@
             </div>
             
             <div class="input-group">
-                <label for="output_dir">Output Directory</label>
-                <input type="text" id="output_dir" value="demo_run_web">
+                <label for="output_dir">Project Output Directory</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="output_dir" value="demo_run_web" style="flex: 1;">
+                    <button id="browse-btn" class="secondary-btn" style="padding: 0.5rem 1rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; cursor: pointer;">Browse...</button>
+                </div>
             </div>
             
-            <details class="advanced-settings">
-                <summary>⚙️ Advanced API Settings</summary>
-                <div class="input-group">
-                    <label for="api_base">Custom API Base URL</label>
-                    <input type="text" id="api_base" placeholder="https://api.openai.com/v1">
+            <div class="api-settings-panel" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                <h3 style="font-size: 0.85rem; margin-bottom: 0.75rem; color: #a78bfa;">⚙️ Model API Settings</h3>
+                <div class="input-group" style="margin-bottom: 0.5rem;">
+                    <label for="api_base">API Base URL</label>
+                    <input type="text" id="api_base" placeholder="e.g. https://api.openai.com/v1">
                 </div>
-                <div class="input-group">
+                <div class="input-group" style="margin-bottom: 0.5rem;">
                     <label for="model_name">Model Name</label>
-                    <input type="text" id="model_name" placeholder="gpt-4o">
+                    <input type="text" id="model_name" placeholder="e.g. gpt-4o or minimax-m27">
                 </div>
-                <div class="input-group">
-                    <label for="api_key">API Key (Local Session)</label>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label for="api_key">API Key</label>
                     <input type="password" id="api_key" placeholder="sk-...">
                 </div>
-            </details>
+            </div>
             
             <button id="run-btn" class="primary-btn">Initialize Simulation</button>
             

@@ -28,6 +28,22 @@ app.mount("/static", StaticFiles(directory=web_dir), name="static")
 def read_root():
     return FileResponse(os.path.join(web_dir, "index.html"))
 
+@app.get("/api/browse_folder")
+def browse_folder():
+    """Opens a native host OS folder picker dialog (only works for local server)."""
+    import tkinter as tk
+    from tkinter import filedialog
+    
+    # Hide the main tkinter window
+    root = tk.Tk()
+    root.attributes("-topmost", True)
+    root.withdraw()
+    
+    folder_path = filedialog.askdirectory(title="Select Project Output Directory")
+    root.destroy()
+    
+    return {"path": folder_path}
+
 @app.websocket("/api/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
