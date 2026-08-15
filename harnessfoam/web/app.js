@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Add logic for Browse button
     const browseBtn = document.getElementById("browse-btn");
+    /* 2026-08-15 | Gemini 3.5 Flash (Medium) */
     if (browseBtn) {
         browseBtn.addEventListener("click", async (e) => {
             e.preventDefault(); // Stop form submission / button default if any
@@ -26,12 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
             browseBtn.textContent = "...";
             try {
                 const response = await fetch('/api/browse_folder');
+                if (!response.ok) {
+                    throw new Error("HTTP error " + response.status);
+                }
                 const data = await response.json();
                 if (data.path) {
                     outputDirInput.value = data.path;
                 }
             } catch (err) {
                 console.error("Failed to browse folder:", err);
+                alert("Failed to open folder browser. Please ensure:\n1. You accessed the page via http://127.0.0.1:8000 (not by opening the HTML file directly).\n2. The HarnessFOAM backend server is running in the terminal.");
             } finally {
                 browseBtn.textContent = originalText;
             }

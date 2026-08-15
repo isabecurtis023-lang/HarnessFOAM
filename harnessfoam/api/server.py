@@ -28,31 +28,30 @@ app.mount("/static", StaticFiles(directory=web_dir), name="static")
 def read_root():
     return FileResponse(os.path.join(web_dir, "index.html"))
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 @app.get("/api/browse_folder")
 def browse_folder():
     """Opens a native host OS folder picker dialog via a subprocess to avoid threading issues."""
     import subprocess
     import sys
     
-    # Run a tiny python script in a separate process to show the dialog
-    script = (
-        "import tkinter as tk, tkinter.filedialog as fd; "
-        "root=tk.Tk(); "
-        "root.attributes('-topmost', True); "
-        "root.withdraw(); "
-        "print(fd.askdirectory(), end='')"
-    )
-    
+    script = """
+import tkinter as tk
+from tkinter import filedialog
+root = tk.Tk()
+root.withdraw()
+root.attributes("-topmost", True)
+root.update()
+folder_path = filedialog.askdirectory(parent=root, title="Select Project Output Directory")
+root.destroy()
+print(folder_path, end="")
+"""
     try:
-        result = subprocess.run(
-            [sys.executable, "-c", script],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=60)
         folder_path = result.stdout.strip()
     except Exception as e:
-        print(f"Dialog error: {e}")
         folder_path = ""
+        print(f"Error opening folder dialog: {e}")
         
     return {"path": folder_path}
 
