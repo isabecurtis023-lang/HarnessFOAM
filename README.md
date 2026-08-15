@@ -1,7 +1,6 @@
 # HarnessFOAM 🌊
 
-An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM.
-Based on the groundbreaking architecture from *Foam-Agent 2.0* (arXiv:2509.18178), this project reimagines computational fluid dynamics through the lens of modern AI.
+An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM. This original project reimagines computational fluid dynamics through the lens of modern AI, acting as a highly capable co-pilot for engineers and researchers.
 
 ## Overview
 HarnessFOAM completely automates the tedious, error-prone workflow of OpenFOAM. From a single natural language prompt, the framework autonomously handles:
@@ -23,7 +22,7 @@ Install the dependencies:
 ```bash
 pip install -e .
 ```
-Run tests (includes Appendix B benchmark simulations from the paper):
+Run tests (includes comprehensive benchmark simulations):
 ```bash
 pytest -v
 ```
