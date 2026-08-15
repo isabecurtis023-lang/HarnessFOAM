@@ -203,9 +203,8 @@ document.addEventListener("DOMContentLoaded", () => {
         loadRootTree(outputDirInput.value.trim());
     }
     
-    // Sidebar Resizer Drag Logic
+     // 2026-08-15 – Gemini 3.5 Flash: Removed duplicate controlPanel declaration to prevent SyntaxError
     const cpResizer = document.getElementById("cp-resizer");
-    const controlPanel = document.querySelector(".control-panel");
     
     let isResizingExplorer = false;
     let isResizingCP = false;
@@ -828,8 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resizeObserver.observe(siderPanelEl);
     }
 
-    // Sync Chat Model with Global Model
-    const modelNameSelect = document.getElementById("model_name");
+    // 2026-08-15 – Gemini 3.5 Flash: Removed duplicate modelNameSelect declaration to prevent SyntaxError
     const chatModelSelect = document.getElementById("chat-model-select");
 
     function syncChatModelOptions() {
