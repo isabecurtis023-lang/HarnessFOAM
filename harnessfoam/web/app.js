@@ -48,6 +48,62 @@ document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("settings-modal");
     const closeModalBtn = document.querySelector(".close-modal");
     const saveSettingsBtn = document.getElementById("save-settings-btn");
+    
+    // Fetch Models Logic
+    const fetchModelsBtn = document.getElementById("fetch-models-btn");
+    const modelList = document.getElementById("model-list");
+    const modelStatus = document.getElementById("model-fetch-status");
+
+    if (fetchModelsBtn) {
+        fetchModelsBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const apiBase = document.getElementById("api_base").value.trim();
+            const apiKey = document.getElementById("api_key").value.trim();
+            
+            if (!apiBase) {
+                modelStatus.style.color = "#ef4444";
+                modelStatus.textContent = "Please enter an API Base URL first.";
+                return;
+            }
+            
+            fetchModelsBtn.disabled = true;
+            modelStatus.style.color = "#a78bfa";
+            modelStatus.textContent = "Fetching models...";
+            
+            try {
+                const response = await fetch(`/api/models?api_base=${encodeURIComponent(apiBase)}&api_key=${encodeURIComponent(apiKey)}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    modelStatus.style.color = "#ef4444";
+                    modelStatus.textContent = `Error: ${data.error}`;
+                } else if (data.models && data.models.length > 0) {
+                    modelList.innerHTML = "";
+                    data.models.forEach(modelId => {
+                        const option = document.createElement("option");
+                        option.value = modelId;
+                        modelList.appendChild(option);
+                    });
+                    modelStatus.style.color = "#10b981";
+                    modelStatus.textContent = `Successfully loaded ${data.models.length} models! Click input to select.`;
+                    
+                    // Auto-select first model if empty
+                    const modelInput = document.getElementById("model_name");
+                    if (!modelInput.value) {
+                        modelInput.value = data.models[0];
+                    }
+                } else {
+                    modelStatus.style.color = "#ef4444";
+                    modelStatus.textContent = "No models found at this endpoint.";
+                }
+            } catch (err) {
+                modelStatus.style.color = "#ef4444";
+                modelStatus.textContent = `Network error: ${err.message}`;
+            } finally {
+                fetchModelsBtn.disabled = false;
+            }
+        });
+    }
 
     if (settingsBtn && modal && closeModalBtn) {
         settingsBtn.addEventListener("click", (e) => {

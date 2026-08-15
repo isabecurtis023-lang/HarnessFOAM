@@ -1,2 +1,2 @@
 [console_scripts]
-harnessfoam = harnessfoam.main:app
+harnessfoam = harnessfoam.main:main

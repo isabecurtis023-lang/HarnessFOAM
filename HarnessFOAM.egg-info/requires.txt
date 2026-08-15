@@ -6,7 +6,9 @@ faiss-cpu>=1.7.4
 gmsh>=4.11.1
 pyvista>=0.42.3
 mcp>=1.0.0
+python-dotenv>=1.0.0
 
 [dev]
 pytest>=7.0
+pytest-asyncio
 black>=23.0

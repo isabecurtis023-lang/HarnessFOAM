@@ -24,12 +24,12 @@
             
             <div class="input-group">
                 <label for="prompt">Simulation Requirement</label>
-                <textarea id="prompt" placeholder="e.g. Simulate incompressible flow over a circular cylinder at 2 m/s..."></textarea>
+                <textarea id="prompt" placeholder="e.g. Simulate incompressible flow over a circular cylinder at 2 m/s...">Simulate incompressible flow over a circular cylinder at 2 m/s. Use a 2D domain. The cylinder radius is 0.05m.</textarea>
             </div>
             
             <div class="input-group">
                 <label for="post_prompt">Post-Processing Requirement (Optional)</label>
-                <textarea id="post_prompt" placeholder="e.g. Plot the velocity magnitude and save as PNG..." style="height: 60px;"></textarea>
+                <textarea id="post_prompt" placeholder="e.g. Plot the velocity magnitude and save as PNG..." style="height: 60px;">Plot the velocity magnitude and save as PNG.</textarea>
             </div>
             
             <div class="input-group">
@@ -62,12 +62,17 @@
                         <input type="text" id="api_base" placeholder="e.g. https://api.openai.com/v1">
                     </div>
                     <div class="input-group">
-                        <label for="model_name">Model Name</label>
-                        <input type="text" id="model_name" placeholder="e.g. gpt-4o or minimax-m27">
-                    </div>
-                    <div class="input-group">
                         <label for="api_key">API Key</label>
                         <input type="password" id="api_key" placeholder="sk-...">
+                    </div>
+                    <div class="input-group">
+                        <label for="model_name">Model Name</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" id="model_name" list="model-list" placeholder="e.g. gpt-4o or minimax-m27" style="flex: 1;">
+                            <button id="fetch-models-btn" class="secondary-btn" style="padding: 0.5rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; cursor: pointer;" title="Auto-detect models">🔄</button>
+                        </div>
+                        <datalist id="model-list"></datalist>
+                        <div id="model-fetch-status" style="font-size: 0.75rem; color: #10b981; margin-top: 0.25rem;"></div>
                     </div>
                     <button id="save-settings-btn" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Settings</button>
                 </div>

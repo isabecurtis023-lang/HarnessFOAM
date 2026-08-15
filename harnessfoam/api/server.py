@@ -55,6 +55,30 @@ print(folder_path, end="")
         
     return {"path": folder_path}
 
+@app.get("/api/models")
+def get_models(api_base: str = "", api_key: str = ""):
+    """Fetches available models from an OpenAI-compatible /models endpoint."""
+    import requests
+    
+    if not api_base:
+        return {"models": [], "error": "API Base URL is required"}
+        
+    # Standardize the endpoint url
+    url = api_base.rstrip("/")
+    if not url.endswith("/models"):
+        url = url + "/models"
+        
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        models = [m.get("id") for m in data.get("data", []) if m.get("id")]
+        return {"models": models, "error": None}
+    except Exception as e:
+        return {"models": [], "error": str(e)}
+
 @app.websocket("/api/stream")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

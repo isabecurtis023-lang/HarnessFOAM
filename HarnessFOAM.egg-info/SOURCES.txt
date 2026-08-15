@@ -1,4 +1,6 @@
+README.md
 pyproject.toml
+setup.py
 HarnessFOAM.egg-info/PKG-INFO
 HarnessFOAM.egg-info/SOURCES.txt
 HarnessFOAM.egg-info/dependency_links.txt
@@ -6,6 +8,15 @@ HarnessFOAM.egg-info/entry_points.txt
 HarnessFOAM.egg-info/requires.txt
 HarnessFOAM.egg-info/top_level.txt
 harnessfoam/__init__.py
+harnessfoam/cli.py
+harnessfoam/main.py
 harnessfoam/agents/__init__.py
+harnessfoam/agents/architect.py
 harnessfoam/agents/graph.py
+harnessfoam/agents/input_writer.py
+harnessfoam/agents/llm_config.py
+harnessfoam/agents/meshing.py
+harnessfoam/agents/reviewer.py
+harnessfoam/agents/runner.py
+harnessfoam/agents/visualizer.py
 harnessfoam/core/mcp_server.py
