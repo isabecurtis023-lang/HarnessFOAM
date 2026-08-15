@@ -1,0 +1,59 @@
+<!-- 2026-08-15 (gemini-2.5-pro) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HarnessFOAM Web Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar / Input Area -->
+        <aside class="control-panel">
+            <header>
+                <h1>HarnessFOAM</h1>
+                <p>AI-Powered CFD Automation</p>
+            </header>
+            
+            <div class="input-group">
+                <label for="prompt">Simulation Requirement</label>
+                <textarea id="prompt" placeholder="e.g. Simulate incompressible flow over a circular cylinder at 2 m/s..."></textarea>
+            </div>
+            
+            <div class="input-group">
+                <label for="output_dir">Output Directory</label>
+                <input type="text" id="output_dir" value="demo_run_web">
+            </div>
+            
+            <button id="run-btn" class="primary-btn">Initialize Simulation</button>
+            
+            <div class="status-indicator">
+                <div class="dot" id="connection-dot"></div>
+                <span id="connection-status">Disconnected</span>
+            </div>
+        </aside>
+        
+        <!-- Main Terminal / Chat Area -->
+        <main class="terminal-container">
+            <div class="terminal-header">
+                <div class="mac-buttons">
+                    <span class="close"></span>
+                    <span class="minimize"></span>
+                    <span class="maximize"></span>
+                </div>
+                <div class="terminal-title">Agentic Workflow Console</div>
+            </div>
+            <div class="terminal-body" id="console-output">
+                <div class="log-entry system">Welcome to HarnessFOAM v0.1.0 Web Interface.</div>
+                <div class="log-entry system">Ready to process CFD specifications.</div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>

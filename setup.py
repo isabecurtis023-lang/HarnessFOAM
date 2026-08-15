@@ -10,7 +10,10 @@ setup(
         "langgraph",
         "langchain-openai",
         "pydantic",
-        "rich"
+        "rich",
+        "fastapi",
+        "uvicorn",
+        "websockets"
     ],
     entry_points={
         "console_scripts": [
