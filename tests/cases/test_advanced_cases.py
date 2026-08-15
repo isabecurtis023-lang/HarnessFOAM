@@ -1,6 +1,14 @@
-# 2026-08-15 - Created by Antigravity (Model: gemini-2.5-pro)
-# Test suite for Phase 10: Advanced Multi-Physics Benchmarks
+# 2026-08-15 (gemini-2.5-pro)
+"""
+This module contains 10 advanced multi-physics benchmark test cases for the HarnessFOAM framework.
+These cases are designed to validate the framework's capability across a wide range of computational fluid dynamics 
+phenomena, including heat transfer, multiphase flows, reacting flows, shock dynamics, and turbulence.
 
+Each test case provides:
+- id: A unique identifier for the test case.
+- description: A brief summary of the physics involved.
+- prompt: The natural language instruction used to trigger the simulation.
+"""
 ADVANCED_TEST_CASES = [
     {
         "id": "T06_HEAT_LAMINAR",
