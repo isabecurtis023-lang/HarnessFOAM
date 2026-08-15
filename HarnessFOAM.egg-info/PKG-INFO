@@ -1,0 +1,19 @@
+Metadata-Version: 2.4
+Name: HarnessFOAM
+Version: 0.1.0
+Summary: An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM
+Author: Isabel Curtis
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Description-Content-Type: text/markdown
+Requires-Dist: langgraph>=0.0.26
+Requires-Dist: langchain>=0.1.0
+Requires-Dist: langchain-openai>=0.0.2
+Requires-Dist: pydantic>=2.0
+Requires-Dist: faiss-cpu>=1.7.4
+Requires-Dist: gmsh>=4.11.1
+Requires-Dist: pyvista>=0.42.3
+Requires-Dist: mcp>=1.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
