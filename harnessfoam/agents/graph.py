@@ -23,8 +23,21 @@ def architect_node(state: SimulationState) -> SimulationState:
     print(f"Architect plan generated: {len(state['plan'])} files.")
     return state
 
+from harnessfoam.agents.meshing import generate_mesh_script
+from harnessfoam.agents.visualizer import generate_visualization_script
+
 def meshing_node(state: SimulationState) -> SimulationState:
     print(f"Meshing Agent: Generating mesh for case {state['case_id']}")
+    
+    # Call real LangChain logic for meshing
+    mesh_results = generate_mesh_script(state['prompt'])
+    state['logs']['is_gmsh_required'] = mesh_results['is_gmsh_required']
+    state['logs']['mesh_python_script'] = mesh_results['python_script']
+    if mesh_results['is_gmsh_required']:
+        print("Meshing Agent generated Gmsh Python script.")
+    else:
+        print("Meshing Agent determined native OpenFOAM meshing is sufficient.")
+        
     state['mesh_job_id'] = f"mesh_{state['case_id']}_{int(time.time())}"
     return state
 
@@ -68,6 +81,16 @@ def reviewer_node(state: SimulationState) -> SimulationState:
 
 def visualizer_node(state: SimulationState) -> SimulationState:
     print(f"Visualization Agent: Generating visuals...")
+    
+    # Call real LangChain logic for visualization
+    viz_results = generate_visualization_script(state['prompt'])
+    state['logs']['is_visualization_required'] = viz_results['is_visualization_required']
+    state['logs']['pyvista_script'] = viz_results['pyvista_script']
+    if viz_results['is_visualization_required']:
+        print("Visualizer Agent generated PyVista script.")
+    else:
+        print("No visualization requested.")
+        
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state
 

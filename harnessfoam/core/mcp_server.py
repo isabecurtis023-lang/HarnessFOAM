@@ -31,10 +31,18 @@ async def generate_file_content(case_id: str, file: str, folder: str, user_promp
     generated = write_simulation_inputs([{"file": file, "folder": folder}], user_prompt)
     return {"content": generated.get(f"{folder}/{file}", "")}
 
+from harnessfoam.agents.meshing import generate_mesh_script
+from harnessfoam.agents.visualizer import generate_visualization_script
+
 @app.call_tool()
-async def generate_mesh(case_id: str, mesh_config: dict) -> dict:
+async def generate_mesh(case_id: str, mesh_config: dict, user_prompt: str) -> dict:
     """Asynchronously generates the computational mesh using a specified method."""
-    return {"job_id": f"mesh_{case_id}"}
+    mesh_res = generate_mesh_script(user_prompt)
+    return {
+        "job_id": f"mesh_{case_id}", 
+        "is_gmsh": mesh_res.get("is_gmsh_required", False),
+        "script": mesh_res.get("python_script", "")
+    }
 
 from harnessfoam.agents.runner import generate_hpc_script
 from harnessfoam.agents.reviewer import analyze_errors
@@ -73,6 +81,11 @@ async def apply_fix(case_id: str, modifications: list) -> dict:
     return {"status": "SUCCESS"}
 
 @app.call_tool()
-async def generate_visualization(case_id: str, quantity: str) -> dict:
+async def generate_visualization(case_id: str, quantity: str, user_prompt: str) -> dict:
     """Asynchronously generates a visualization of the simulation results."""
-    return {"job_id": f"viz_{case_id}"}
+    viz_res = generate_visualization_script(user_prompt)
+    return {
+        "job_id": f"viz_{case_id}",
+        "is_viz": viz_res.get("is_visualization_required", False),
+        "script": viz_res.get("pyvista_script", "")
+    }
