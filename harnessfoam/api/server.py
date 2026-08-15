@@ -617,4 +617,5 @@ User Question:
 
 def start_server(host="127.0.0.1", port=8000):
     print(f"Starting HarnessFOAM Web Interface at http://{host}:{port}")
-    uvicorn.run("harnessfoam.api.server:app", host=host, port=port, reload=False)
+    # 2026-08-15 – Gemini 3.5 Flash: Enable auto-reload for future development convenience
+    uvicorn.run("harnessfoam.api.server:app", host=host, port=port, reload=True)
