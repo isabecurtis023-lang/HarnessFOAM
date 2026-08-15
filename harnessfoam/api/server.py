@@ -292,6 +292,47 @@ def llm_status(api_base: str = "", api_key: str = ""):
     except Exception as e:
         return {"status": "error", "message": "Connection Failed"}
 
+# Global variables for tracking active process and websocket task to allow cancelling/stopping them
+active_process = None
+active_ws_task = None
+
+@app.post("/api/stop")
+def stop_execution():
+    global active_process, active_ws_task
+    stopped = False
+    
+    # 1. Cancel the active WebSocket task (Generate Files / LangGraph)
+    if active_ws_task and not active_ws_task.done():
+        try:
+            active_ws_task.cancel()
+            stopped = True
+        except Exception:
+            pass
+        active_ws_task = None
+        
+    # 2. Terminate the active solver process (Run OpenFOAM)
+    if active_process:
+        try:
+            active_process.kill()
+            stopped = True
+        except Exception:
+            pass
+        active_process = None
+        
+    # 3. Kill any OpenFOAM solvers in WSL/Linux
+    try:
+        import subprocess
+        import shutil
+        if shutil.which("wsl"):
+            subprocess.run(["wsl", "killall", "blockMesh", "simpleFoam", "icoFoam", "scalarTransportFoam", "rhoSimpleFoam", "pimpleFoam"], capture_output=True)
+        else:
+            subprocess.run(["killall", "blockMesh", "simpleFoam", "icoFoam", "scalarTransportFoam", "rhoSimpleFoam", "pimpleFoam"], capture_output=True)
+        stopped = True
+    except Exception:
+        pass
+        
+    return {"status": "ok", "message": "Stopped successfully." if stopped else "No active process to stop."}
+
 # 2026-08-15 – Gemini 3.5 Flash: Helper to run a command and stream output without using asyncio subprocesses (prevents NotImplementedError on Windows)
 async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket: WebSocket):
     import subprocess
@@ -311,6 +352,7 @@ async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket
             q.put(None)
             
     try:
+        global active_process
         proc = subprocess.Popen(
             cmd,
             cwd=cwd,
@@ -321,6 +363,7 @@ async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket
             encoding="utf-8",
             errors="replace"
         )
+        active_process = proc
         
         t = threading.Thread(target=read_output, args=(proc, q), daemon=True)
         t.start()
@@ -342,6 +385,8 @@ async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket
         import traceback
         traceback.print_exc()
         raise e
+    finally:
+        active_process = None
 
 async def install_openfoam(websocket: WebSocket):
     import json
@@ -402,6 +447,9 @@ async def install_openfoam(websocket: WebSocket):
 @app.websocket("/api/stream")
 async def websocket_endpoint(websocket: WebSocket):
     import json
+    import asyncio
+    global active_ws_task
+    active_ws_task = asyncio.current_task()
     await websocket.accept()
     try:
         # Wait for the client to send the request parameters
@@ -584,6 +632,10 @@ echo "Simulation complete!"
         print("Client disconnected")
     except Exception as e:
         await websocket.send_json({"type": "error", "message": str(e)})
+    finally:
+        # 2026-08-15 – Gemini 3.5 Flash: Remove redundant global declaration to fix SyntaxError
+        if active_ws_task == asyncio.current_task():
+            active_ws_task = None
 
 @app.websocket("/api/chat_stream")
 async def chat_websocket_endpoint(websocket: WebSocket):
