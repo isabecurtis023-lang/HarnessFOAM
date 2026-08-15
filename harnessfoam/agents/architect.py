@@ -18,9 +18,9 @@ class ArchitectPlan(BaseModel):
 def build_architect_agent():
     # If the environment lacks the API key, fallback to a dummy chain or handle it gracefully.
     # The ChatOpenAI will automatically pick up OPENAI_API_KEY and OPENAI_API_BASE.
-    # We set a default model, e.g., 'DeepSeek-V3.2' or whichever is supported by the custom endpoint.
+    # We set a default model, e.g., 'minimax-m27' or whichever is supported by the custom endpoint.
     llm = ChatOpenAI(
-        model="DeepSeek-V3.2", 
+        model="minimax-m27", 
         temperature=0.0
     )
     

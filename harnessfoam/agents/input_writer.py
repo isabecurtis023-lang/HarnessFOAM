@@ -12,7 +12,7 @@ class FileContentResult(BaseModel):
 
 def build_input_writer_agent():
     llm = ChatOpenAI(
-        model="DeepSeek-V3.2",
+        model="minimax-m27",
         temperature=0.1
     )
     

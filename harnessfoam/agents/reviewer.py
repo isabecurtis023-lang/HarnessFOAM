@@ -18,7 +18,7 @@ class ReviewResult(BaseModel):
 
 def build_reviewer_agent():
     llm = ChatOpenAI(
-        model="DeepSeek-V3.2",
+        model="minimax-m27",
         temperature=0.0
     )
     

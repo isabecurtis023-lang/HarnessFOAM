@@ -11,7 +11,7 @@ class SlurmScriptResult(BaseModel):
 
 def build_runner_agent():
     llm = ChatOpenAI(
-        model="DeepSeek-V3.2",
+        model="minimax-m27",
         temperature=0.1
     )
     
