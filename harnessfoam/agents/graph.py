@@ -37,16 +37,33 @@ def input_writer_node(state: SimulationState) -> SimulationState:
     print(f"Input Writer successfully generated contents for {len(state['logs']['generated_files'])} files.")
     return state
 
+from harnessfoam.agents.runner import generate_hpc_script
+from harnessfoam.agents.reviewer import analyze_errors
+
 def runner_node(state: SimulationState) -> SimulationState:
     print(f"Runner Agent: Submitting simulation job...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
+    
+    # Generate Slurm script if HPC is requested
+    slurm_script = generate_hpc_script(state['prompt'])
+    state['logs']['slurm_script'] = slurm_script
+    print(f"Runner generated execution script:\n{slurm_script[:50]}...")
+    
     # Mocking success or failure
     state['status'] = 'FAILED' if state['errors'] < 1 else 'SUCCESS'
+    if state['status'] == 'FAILED':
+        state['logs']['execution_error'] = "--> FOAM FATAL ERROR:\nCourant number exceeded 1.0"
     return state
 
 def reviewer_node(state: SimulationState) -> SimulationState:
     print(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
+    
+    # Call the real LangChain logic
+    error_logs = state['logs'].get('execution_error', 'Unknown error')
+    review_results = analyze_errors(error_logs)
+    state['logs']['review_suggestions'] = review_results['suggestions']
+    print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
 def visualizer_node(state: SimulationState) -> SimulationState:

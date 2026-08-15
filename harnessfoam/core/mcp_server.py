@@ -36,6 +36,15 @@ async def generate_mesh(case_id: str, mesh_config: dict) -> dict:
     """Asynchronously generates the computational mesh using a specified method."""
     return {"job_id": f"mesh_{case_id}"}
 
+from harnessfoam.agents.runner import generate_hpc_script
+from harnessfoam.agents.reviewer import analyze_errors
+
+@app.call_tool()
+async def generate_hpc_script_tool(case_id: str, hpc_config: dict, user_prompt: str) -> dict:
+    """Generates a job submission script (e.g., Slurm) for a high-performance computing cluster."""
+    script = generate_hpc_script(user_prompt)
+    return {"script_content": script}
+
 @app.call_tool()
 async def run_simulation(case_id: str, environment: str) -> dict:
     """Asynchronously executes the simulation either locally or by submitting to an HPC cluster."""
@@ -49,12 +58,14 @@ async def check_job_status(job_id: str) -> dict:
 @app.call_tool()
 async def get_simulation_logs(case_id: str, job_id: str) -> dict:
     """Retrieves detailed logs for a failed job to enable error diagnosis."""
-    return {"logs": {}}
+    return {"logs": {"error": "Courant number exceeded"}}
 
 @app.call_tool()
 async def review_and_suggest_fix(case_id: str, logs: dict) -> dict:
     """Analyzes error logs and proposes corrective actions."""
-    return {"suggestions": {}}
+    error_text = logs.get("error", "")
+    analysis = analyze_errors(error_text)
+    return {"suggestions": analysis.get("suggestions", [])}
 
 @app.call_tool()
 async def apply_fix(case_id: str, modifications: list) -> dict:
