@@ -26,14 +26,39 @@ The platform offers a premium real-time Web User Interface, automatic environmen
 
 ## 🖥️ Web User Interface
 
-HarnessFOAM includes a state-of-the-art, zero-dependency HTML/CSS/JS frontend served by a FastAPI backend:
+HarnessFOAM includes a state-of-the-art, zero-dependency HTML/CSS/JS frontend served by a FastAPI backend. The UI is thoughtfully divided into four distinct interactive zones to streamline the CFD workflow:
 
 ![HarnessFOAM Web UI](assets/web_ui_screenshot.png)
 
-* **Interactive File Explorer** – Instant visualization of the generated folder hierarchy (`0/`, `constant/`, `system/`) and live configuration previews.
-* **Console Width Auto-Resize** – Seamless layout adjustment when toggling sidebars or console views using smooth CSS transitions.
-* **Real-time API Settings** – Live synchronization of provider parameters (`OPENAI_API_BASE`, `OPENAI_API_KEY`) and dynamic model list fetching.
-* **Real-Time Agent Feed** – Interactive logs streaming every step taken by the 6 reasoning agents as the workflow progresses.
+### 1. 🎛️ Control Panel (Left Sidebar)
+The main command center for configuring and triggering simulations.
+* **Simulation Requirement**: A text area to input natural language physical setups (e.g., "Simulate incompressible flow...").
+* **Post-Processing Requirement**: A text area to define custom data visualization instructions.
+* **Project Output Directory**: Displays the current workspace. Includes a **Browse...** button to easily select working directories. It features automatic path memory via local storage.
+* **Execution Buttons**:
+  * **Deep driving** (Blue): Initiates the LLM-driven multi-agent workflow to generate all necessary OpenFOAM configuration dictionaries based on the prompt.
+  * **Run OpenFOAM** (Green): Executes the actual OpenFOAM solver pipeline (e.g., `blockMesh`, `snappyHexMesh`, `simpleFoam`) locally or via WSL/Docker.
+  * **Post-Process** (Purple): Triggers the visualizer agent to generate and render 3D plots (e.g., velocity/pressure fields) via PyVista.
+  * **Stop** (Red): Safely cancels any ongoing backend execution.
+* **Status Indicators**: Real-time dots showing OpenFOAM environment readiness, LLM API connection status, backend WebSocket connection, and UI uptime.
+* **⚙️ Setting**: Opens a modal to configure API parameters (Base URL, API Key, Model Selection) on the fly without restarting the server.
+
+### 2. 📁 File Explorer (Inner Left Sidebar)
+A live directory viewer providing instant visibility into the simulation setup.
+* Automatically refreshes upon generation completion to display the full OpenFOAM hierarchy (`0/`, `constant/`, `system/`).
+* Provides quick actions to create, rename, delete, or copy files and folders.
+* Clicking on any file instantly opens it in the **File Viewer** tab in the main workspace for quick inspection or manual modification.
+
+### 3. 💻 Main Workspace (Center Area)
+The primary execution context, split into tabbed views:
+* **Console Tab**: A rich terminal interface that streams real-time, color-coded execution logs. It displays step-by-step reasoning from different agents (e.g., `[Architect Agent]`, `[Meshing Agent]`), execution outputs, error traces, and rendered inline image plots from post-processing.
+* **File Viewer Tab**: An integrated lightweight text editor that allows users to instantly read, modify, and save OpenFOAM dictionary files (like `controlDict` or `fvSchemes`) without leaving the browser.
+
+### 4. ✨ AI Assistant (Right Sidebar)
+An integrated conversational AI helper overlay.
+* Features a dedicated chat interface independent of the main generation workflow.
+* Allows users to query the assistant for help on CFD physics, OpenFOAM syntax, or to ask for optimization suggestions based on the current context.
+* Supports selecting specific reasoning models via a dropdown and tracks token usage.
 
 ---
 
