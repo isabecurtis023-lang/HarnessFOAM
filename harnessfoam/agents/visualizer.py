@@ -12,7 +12,7 @@ class VisualizationScriptResult(BaseModel):
 
 def build_visualizer_agent():
     llm = ChatOpenAI(
-        model="gpt-3.5-turbo",
+        model="DeepSeek-V3.2",
         temperature=0.1
     )
     
