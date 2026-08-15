@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HarnessFOAM 🌊 - Multi-Agent CFD Automation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090b11;
+            --surface: #121620;
+            --surface-hover: #1a202e;
+            --accent: #3b82f6;
+            --accent-rgb: 59, 130, 246;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --text: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --success: #10b981;
+            --glow-green: rgba(16, 185, 129, 0.2);
+            --gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem 2rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-emoji {
+            font-size: 3rem;
+            filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4));
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 1.5rem auto 2.5rem auto;
+            font-weight: 400;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge-green {
+            border-color: rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--gradient);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(59, 130, 246, 0.5);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        section {
+            margin-bottom: 6rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2.5rem;
+            text-align: center;
+            letter-spacing: -0.02em;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+
+        .screenshot-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.75rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease;
+        }
+
+        .screenshot-container:hover {
+            border-color: var(--border-hover);
+        }
+
+        .screenshot-header {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 0.75rem;
+            padding-left: 0.5rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4b5563;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .screenshot-img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+
+        @media (max-width: 1024px) {
+            .workflow-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .workflow-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .workflow-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.1);
+        }
+
+        .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 600;
+            background: rgba(59, 130, 246, 0.1);
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+
+        .workflow-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .workflow-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .diagram-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .diagram-container {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .node {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .node-accent {
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        .node-green {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        .connector {
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .code-container {
+            background: #06080d;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .code-line {
+            color: #f3f4f6;
+            margin-bottom: 0.25rem;
+        }
+
+        .comment { color: #4b5563; }
+        .keyword { color: #f472b6; }
+        .string { color: #34d399; }
+        .command { color: #60a5fa; }
+
+        .roadmap-timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .roadmap-timeline::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            background: var(--border);
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -1px;
+        }
+
+        @media (max-width: 768px) {
+            .roadmap-timeline::after {
+                left: 31px;
+            }
+        }
+
+        .timeline-item {
+            padding: 1rem 2rem;
+            position: relative;
+            width: 50%;
+            left: 0;
+        }
+
+        .timeline-item-right {
+            left: 50%;
+        }
+
+        @media (max-width: 768px) {
+            .timeline-item {
+                width: 100%;
+                left: 0;
+                padding-left: 70px;
+                padding-right: 25px;
+            }
+            .timeline-item-right {
+                left: 0;
+            }
+        }
+
+        .timeline-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            position: absolute;
+            top: 24px;
+            right: -8px;
+            z-index: 1;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .timeline-item-right .timeline-dot {
+            left: -8px;
+        }
+
+        @media (max-width: 768px) {
+            .timeline-dot {
+                left: 22px !important;
+                right: auto;
+            }
+        }
+
+        .timeline-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .timeline-card:hover {
+            border-color: var(--border-hover);
+        }
+
+        .timeline-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        footer p {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-wrap">
+            <span class="logo-emoji">🌊</span>
+            <h1>HarnessFOAM</h1>
+        </div>
+        <p class="subtitle">An End‑to‑End Composable Multi‑Agent Framework for Automating CFD Simulation in OpenFOAM. Driven by LangGraph, MCP, and Vision-Language models.</p>
+        
+        <div class="badges">
+            <div class="badge">🐍 Python 3.10+</div>
+            <div class="badge badge-green">🟢 OpenFOAM Compatible</div>
+            <div class="badge">📜 MIT License</div>
+        </div>
+
+        <a href="https://github.com/isabecurtis023-lang/HarnessFOAM" class="btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.25rem;"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>
+            View on GitHub
+        </a>
+    </header>
+
+    <main>
+        <section>
+            <h2>🖥️ Live Web User Interface</h2>
+            <div class="screenshot-container">
+                <div class="screenshot-header">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                <img src="assets/web_ui_screenshot.png" alt="HarnessFOAM Premium Web UI" class="screenshot-img">
+            </div>
+        </section>
+
+        <section>
+            <h2>🔄 The Multi-Agent Workflow</h2>
+            <div class="diagram-section">
+                <div class="diagram-container">
+                    <div class="node node-accent">User Query</div>
+                    <div class="connector">➔</div>
+                    <div class="node">Architect</div>
+                    <div class="connector">➔</div>
+                    <div class="node">Meshing</div>
+                    <div class="connector">➔</div>
+                    <div class="node">Input Writer</div>
+                    <div class="connector">➔</div>
+                    <div class="node">Runner</div>
+                    <div class="connector">➔</div>
+                    <div class="node node-green">Visualizer</div>
+                    <div class="connector">➔</div>
+                    <div class="node node-accent">Visual Feedback / Review</div>
+                </div>
+            </div>
+
+            <div class="workflow-grid">
+                <div class="workflow-card">
+                    <div class="step-num">1</div>
+                    <h3>Architect Agent</h3>
+                    <p>Interprets prompts and structures the OpenFOAM directory case plan.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">2</div>
+                    <h3>Meshing Agent</h3>
+                    <p>Autonomously handles blockMesh Dict structures or compiles custom python-gmsh geometry scripts.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">3</div>
+                    <h3>Input Writer</h3>
+                    <p>Writes mesh, control boundary, scheme, and physical property dictionaries using robust streaming.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">4</div>
+                    <h3>Runner Agent</h3>
+                    <p>Executes simulations locally, via WSL/Docker, or drafts Slurm parallel schedules for HPCs.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">5</div>
+                    <h3>Reviewer Agent</h3>
+                    <p>Performs visual (VLM) and semantic inspections of raw simulation logs, correcting divergence bugs.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">6</div>
+                    <h3>Visualizer</h3>
+                    <p>Compiles PyVista post-processing scripts to extract pressure and velocity contours directly.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🚀 Getting Started</h2>
+            <div class="code-container">
+                <div class="code-header">
+                    <span>CLI Shell</span>
+                    <span>bash</span>
+                </div>
+                <div class="code-line"><span class="comment"># Clone and install dependencies</span></div>
+                <div class="code-line">git clone git@github.com:isabecurtis023-lang/HarnessFOAM.git</div>
+                <div class="code-line">cd HarnessFOAM</div>
+                <div class="code-line">pip install -e .</div>
+                <div class="code-line"><span class="comment"># Start the real-time FastAPI WebSocket Server</span></div>
+                <div class="code-line"><span class="command">harnessfoam</span> serve --host 127.0.0.1 --port 8000</div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🌟 Visionary Future Roadmap</h2>
+            <div class="roadmap-timeline">
+                
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <h3>1. Generative Physical Diffusion</h3>
+                        <p>Leveraging 4D Flow-Diffusion models to synthesize transient flow fields directly in milliseconds, bypassing grid discretisation.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item timeline-item-right">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <h3>2. Closed-Loop VLA Aero-Robotics</h3>
+                        <p>A Vision-Language-Action agent managing aerodynamic shapes from concept prompts down to physical wind-tunnel verification.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <h3>3. Quantum-Accelerated CFD</h3>
+                        <p>Developing hybrid solvers using VQE and HHL algorithms to resolve Naviers-Stokes matrices on QPUs.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item timeline-item-right">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <h3>4. Self-Evolution Physics Autopilot</h3>
+                        <p>Autonomously constructing local numerical discretisation schemes and turbulence closures via agent reinforcement loops.</p>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-card">
+                        <h3>5. Distributed Compute Network</h3>
+                        <p>Leveraging De-Sci blockchain protocols to scale Large Eddy Simulations across peer-to-peer compute nodes.</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</p>
+        <p>&copy; 2026 HarnessFOAM Project. Open sourced under the MIT License.</p>
+    </footer>
+
+</body>
+</html>
