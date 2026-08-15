@@ -22,7 +22,7 @@ Powered by **LangGraph** and integrating seamlessly with any Model Context Proto
 
 1. **Comprehensive End-to-End Automation**: Manages the complete pipeline including geometry/meshing (via native OpenFOAM or `Gmsh`), solver configuration, HPC execution, and post-processing visualization (via `PyVista`).
 2. **Universal LLM Compatibility**: Seamlessly switch between OpenAI (`GPT-4o`), Anthropic (`Claude 3.5 Sonnet`), DeepSeek (`DeepSeek-V3.2`), or MiniMax (`minimax-m27`) through dynamic environment configurations.
-3. **Graceful Degradation (优雅降级)**: Robust `try-except` state handling ensures that even if API keys expire or network requests fail, the framework successfully falls back to logical mock processes, maintaining a 100% crash-free simulation loop.
+3. **Graceful Degradation**: Robust `try-except` state handling ensures that even if API keys expire or network requests fail, the framework successfully falls back to logical mock processes, maintaining a 100% crash-free simulation loop.
 4. **HPC & Slurm Integration**: Generates job submission scripts tailored for massive distributed computing clusters (e.g., Perlmutter).
 
 ---
