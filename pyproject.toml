@@ -27,10 +27,13 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 dev = [
     "pytest>=7.0",
+    "pytest-asyncio",
     "black>=23.0"
 ]
 
 [project.scripts]
-harnessfoam = "harnessfoam.main:app"
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
+harnessfoam = "harnessfoam.main:main"

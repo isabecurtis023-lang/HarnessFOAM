@@ -28,10 +28,11 @@ Output ONLY the structured JSON. Do not provide explanations.
     chain = prompt | llm.with_structured_output(MeshingScriptResult)
     return chain
 
+# 2026-08-15 | Gemini 3.5 Flash (Medium)
 def generate_mesh_script(prompt_text: str) -> dict:
     """Execute the meshing agent to determine meshing strategy and generate scripts."""
-    chain = build_meshing_agent()
     try:
+        chain = build_meshing_agent()
         result = chain.invoke({"user_requirement": prompt_text})
         return {
             "is_gmsh_required": result.is_gmsh_required,
