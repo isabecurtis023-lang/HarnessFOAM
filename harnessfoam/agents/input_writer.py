@@ -1,7 +1,7 @@
 import os
 from typing import Dict, List
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -11,10 +11,7 @@ class FileContentResult(BaseModel):
     content: str = Field(description="The complete and functional OpenFOAM file content")
 
 def build_input_writer_agent():
-    llm = ChatOpenAI(
-        model="minimax-m27",
-        temperature=0.1
-    )
+    llm = build_llm(temperature=0.1)
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM simulation and numerical modeling. 

@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -11,10 +11,7 @@ class MeshingScriptResult(BaseModel):
     python_script: str = Field(description="The complete python script to generate the .msh file using the gmsh library. Empty if not required.")
 
 def build_meshing_agent():
-    llm = ChatOpenAI(
-        model="minimax-m27",
-        temperature=0.1
-    )
+    llm = build_llm(temperature=0.1)
     
     prompt = PromptTemplate(
         template="""You are an expert in computational fluid dynamics and mesh generation.

@@ -1,7 +1,7 @@
 import os
 from typing import List
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -19,10 +19,7 @@ def build_architect_agent():
     # If the environment lacks the API key, fallback to a dummy chain or handle it gracefully.
     # The ChatOpenAI will automatically pick up OPENAI_API_KEY and OPENAI_API_BASE.
     # We set a default model, e.g., 'minimax-m27' or whichever is supported by the custom endpoint.
-    llm = ChatOpenAI(
-        model="minimax-m27", 
-        temperature=0.0
-    )
+    llm = build_llm(temperature=0.1)
     
     prompt = PromptTemplate(
         template="""You are an experienced Planner specializing in OpenFOAM projects.

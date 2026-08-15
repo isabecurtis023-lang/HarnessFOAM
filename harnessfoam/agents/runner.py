@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 
@@ -10,10 +10,7 @@ class SlurmScriptResult(BaseModel):
     script_content: str = Field(description="The complete Slurm submission script content")
 
 def build_runner_agent():
-    llm = ChatOpenAI(
-        model="minimax-m27",
-        temperature=0.1
-    )
+    llm = build_llm(temperature=0.1)
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM and HPC clusters.
