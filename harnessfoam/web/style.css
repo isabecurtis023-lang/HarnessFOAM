@@ -200,6 +200,7 @@ textarea:focus, input:focus {
 }
 
 .tree-item {
+    position: relative;
     display: flex;
     align-items: center;
     padding: 0.35rem 1.5rem;
@@ -230,6 +231,37 @@ textarea:focus, input:focus {
 
 .tree-children.open {
     display: block;
+}
+
+/* 2026-08-15 – Gemini 3.5 Flash: Hover action buttons for file explorer operations */
+.tree-actions {
+    display: none;
+    position: absolute;
+    right: 0.5rem;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: #1a1d27;
+    padding-left: 0.5rem;
+    border-radius: 4px;
+}
+
+.tree-item:hover .tree-actions {
+    display: flex;
+}
+
+.tree-action-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.1rem;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.tree-action-btn:hover {
+    opacity: 1;
+    transform: scale(1.15);
 }
 
 /* Sidebar Resizer */

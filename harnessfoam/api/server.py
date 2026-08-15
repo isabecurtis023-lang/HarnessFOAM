@@ -131,6 +131,111 @@ def save_file(req: SaveFileRequest):
     except Exception as e:
         return {"error": str(e)}
 
+# 2026-08-15 – Gemini 3.5 Flash: File Operations API Models and Handlers
+class DeleteRequest(BaseModel):
+    path: str
+
+class RenameRequest(BaseModel):
+    path: str
+    new_name: str
+
+class CopyPasteRequest(BaseModel):
+    src_path: str
+    dest_dir: str
+
+class CreateRequest(BaseModel):
+    parent_path: str
+    name: str
+    is_dir: bool
+
+@app.post("/api/delete_file")
+def delete_file(req: DeleteRequest):
+    import os
+    import shutil
+    path = req.path
+    if not os.path.exists(path):
+        return {"status": "error", "message": "File or directory does not exist"}
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/rename_file")
+def rename_file(req: RenameRequest):
+    import os
+    path = req.path
+    new_name = req.new_name
+    if not os.path.exists(path):
+        return {"status": "error", "message": "Source path does not exist"}
+    parent = os.path.dirname(path)
+    new_path = os.path.join(parent, new_name)
+    if os.path.exists(new_path):
+        return {"status": "error", "message": "A file or folder with that name already exists"}
+    try:
+        os.rename(path, new_path)
+        return {"status": "ok", "new_path": new_path}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/copy_paste_file")
+def copy_paste_file(req: CopyPasteRequest):
+    import os
+    import shutil
+    src = req.src_path
+    dest_dir = req.dest_dir
+    if not os.path.exists(src):
+        return {"status": "error", "message": "Source path does not exist"}
+    if not os.path.exists(dest_dir) or not os.path.isdir(dest_dir):
+        return {"status": "error", "message": "Destination folder does not exist"}
+        
+    name = os.path.basename(src)
+    dest_path = os.path.join(dest_dir, name)
+    
+    # Avoid overwriting
+    base, ext = os.path.splitext(name)
+    counter = 1
+    while os.path.exists(dest_path):
+        new_name = f"{base}_copy{counter}{ext}" if not os.path.isdir(src) else f"{name}_copy{counter}"
+        dest_path = os.path.join(dest_dir, new_name)
+        counter += 1
+        
+    try:
+        if os.path.isdir(src):
+            shutil.copytree(src, dest_path)
+        else:
+            shutil.copy2(src, dest_path)
+        return {"status": "ok", "new_path": dest_path}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/create_item")
+def create_item(req: CreateRequest):
+    import os
+    parent = req.parent_path
+    name = req.name
+    is_dir = req.is_dir
+    
+    if not os.path.exists(parent) or not os.path.isdir(parent):
+        return {"status": "error", "message": "Parent directory does not exist"}
+        
+    target_path = os.path.join(parent, name)
+    if os.path.exists(target_path):
+        return {"status": "error", "message": "Item with this name already exists"}
+        
+    try:
+        if is_dir:
+            os.makedirs(target_path, exist_ok=True)
+        else:
+            with open(target_path, "w", encoding="utf-8") as f:
+                f.write("")
+        return {"status": "ok", "path": target_path}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.get("/api/cwd")
 def get_cwd():
     import os

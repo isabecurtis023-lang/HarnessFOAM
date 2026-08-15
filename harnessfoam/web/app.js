@@ -386,6 +386,91 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 itemDiv.appendChild(icon);
                 itemDiv.appendChild(name);
+                
+                // 2026-08-15 – Gemini 3.5 Flash: Create tree actions bar
+                const actionsDiv = document.createElement("div");
+                actionsDiv.className = "tree-actions";
+                
+                if (item.is_dir) {
+                    // Create File Button
+                    const createFileBtn = document.createElement("button");
+                    createFileBtn.className = "tree-action-btn";
+                    createFileBtn.textContent = "📄+";
+                    createFileBtn.title = "Create File";
+                    createFileBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const filename = prompt("Enter new file name:");
+                        if (!filename) return;
+                        createItem(item.path, filename, false);
+                    });
+                    actionsDiv.appendChild(createFileBtn);
+                    
+                    // Create Folder Button
+                    const createDirBtn = document.createElement("button");
+                    createDirBtn.className = "tree-action-btn";
+                    createDirBtn.textContent = "📁+";
+                    createDirBtn.title = "Create Folder";
+                    createDirBtn.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        const dirname = prompt("Enter new folder name:");
+                        if (!dirname) return;
+                        createItem(item.path, dirname, true);
+                    });
+                    actionsDiv.appendChild(createDirBtn);
+                    
+                    // Paste Button (only if clipboard is set)
+                    if (window.harnessfoamClipboard) {
+                        const pasteBtn = document.createElement("button");
+                        pasteBtn.className = "tree-action-btn";
+                        pasteBtn.textContent = "📋📥";
+                        pasteBtn.title = "Paste copied item";
+                        pasteBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            pasteItem(window.harnessfoamClipboard, item.path);
+                        });
+                        actionsDiv.appendChild(pasteBtn);
+                    }
+                }
+                
+                // Copy Button
+                const copyBtn = document.createElement("button");
+                copyBtn.className = "tree-action-btn";
+                copyBtn.textContent = "📋";
+                copyBtn.title = "Copy";
+                copyBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    window.harnessfoamClipboard = item.path;
+                    alert(`Copied path: ${item.name}`);
+                    loadRootTree(outputDirInput.value.trim());
+                });
+                actionsDiv.appendChild(copyBtn);
+                
+                // Rename Button
+                const renameBtn = document.createElement("button");
+                renameBtn.className = "tree-action-btn";
+                renameBtn.textContent = "✏️";
+                renameBtn.title = "Rename";
+                renameBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const newName = prompt("Rename to:", item.name);
+                    if (!newName || newName === item.name) return;
+                    renameItem(item.path, newName);
+                });
+                actionsDiv.appendChild(renameBtn);
+                
+                // Delete Button
+                const deleteBtn = document.createElement("button");
+                deleteBtn.className = "tree-action-btn";
+                deleteBtn.textContent = "🗑️";
+                deleteBtn.title = "Delete";
+                deleteBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    if (!confirm(`Are you sure you want to delete ${item.name}?`)) return;
+                    deleteItem(item.path);
+                });
+                actionsDiv.appendChild(deleteBtn);
+                
+                itemDiv.appendChild(actionsDiv);
                 li.appendChild(itemDiv);
                 
                 if (item.is_dir) {
@@ -895,6 +980,88 @@ document.addEventListener("DOMContentLoaded", () => {
                 sendChatMessage();
             }
         });
+    }
+
+    // 2026-08-15 – Gemini 3.5 Flash: File system action helper functions
+    async function createItem(parentPath, name, isDir) {
+        try {
+            const resp = await fetch('/api/create_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parent_path: parentPath, name, is_dir: isDir })
+            });
+            const data = await resp.json();
+            if (data.status === "ok") {
+                loadRootTree(outputDirInput.value.trim());
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (e) {
+            alert("Network error creating item");
+        }
+    }
+
+    async function pasteItem(srcPath, destDir) {
+        try {
+            const resp = await fetch('/api/copy_paste_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ src_path: srcPath, dest_dir: destDir })
+            });
+            const data = await resp.json();
+            if (data.status === "ok") {
+                // Clear clipboard after paste
+                window.harnessfoamClipboard = null;
+                loadRootTree(outputDirInput.value.trim());
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (e) {
+            alert("Network error pasting item");
+        }
+    }
+
+    async function renameItem(path, newName) {
+        try {
+            const resp = await fetch('/api/rename_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, new_name: newName })
+            });
+            const data = await resp.json();
+            if (data.status === "ok") {
+                loadRootTree(outputDirInput.value.trim());
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (e) {
+            alert("Network error renaming item");
+        }
+    }
+
+    async function deleteItem(path) {
+        try {
+            const resp = await fetch('/api/delete_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+            const data = await resp.json();
+            if (data.status === "ok") {
+                if (window.currentEditingFile === path) {
+                    const tabFileViewer = document.getElementById("tab-file-viewer");
+                    if (tabFileViewer) {
+                        tabFileViewer.style.display = "none";
+                        setTabActive('tab-console');
+                    }
+                }
+                loadRootTree(outputDirInput.value.trim());
+            } else {
+                alert(`Error: ${data.message}`);
+            }
+        } catch (e) {
+            alert("Network error deleting item");
+        }
     }
 
 });
