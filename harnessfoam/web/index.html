@@ -14,9 +14,12 @@
     <div class="app-container">
         <!-- Sidebar / Input Area -->
         <aside class="control-panel">
-            <header>
-                <h1>HarnessFOAM</h1>
-                <p>AI-Powered CFD Automation</p>
+            <header style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1>HarnessFOAM</h1>
+                    <p>AI-Powered CFD Automation</p>
+                </div>
+                <button id="settings-btn" style="background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s;" title="API Settings">⚙️</button>
             </header>
             
             <div class="input-group">
@@ -37,22 +40,6 @@
                 </div>
             </div>
             
-            <div class="api-settings-panel" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid rgba(255,255,255,0.05);">
-                <h3 style="font-size: 0.85rem; margin-bottom: 0.75rem; color: #a78bfa;">⚙️ Model API Settings</h3>
-                <div class="input-group" style="margin-bottom: 0.5rem;">
-                    <label for="api_base">API Base URL</label>
-                    <input type="text" id="api_base" placeholder="e.g. https://api.openai.com/v1">
-                </div>
-                <div class="input-group" style="margin-bottom: 0.5rem;">
-                    <label for="model_name">Model Name</label>
-                    <input type="text" id="model_name" placeholder="e.g. gpt-4o or minimax-m27">
-                </div>
-                <div class="input-group" style="margin-bottom: 0;">
-                    <label for="api_key">API Key</label>
-                    <input type="password" id="api_key" placeholder="sk-...">
-                </div>
-            </div>
-            
             <button id="run-btn" class="primary-btn">Initialize Simulation</button>
             
             <div class="status-indicator">
@@ -60,6 +47,32 @@
                 <span id="connection-status">Disconnected</span>
             </div>
         </aside>
+        
+        <!-- API Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Model API Settings</h2>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Override the local `.env` variables for this session.</p>
+                    <div class="input-group">
+                        <label for="api_base">API Base URL</label>
+                        <input type="text" id="api_base" placeholder="e.g. https://api.openai.com/v1">
+                    </div>
+                    <div class="input-group">
+                        <label for="model_name">Model Name</label>
+                        <input type="text" id="model_name" placeholder="e.g. gpt-4o or minimax-m27">
+                    </div>
+                    <div class="input-group">
+                        <label for="api_key">API Key</label>
+                        <input type="password" id="api_key" placeholder="sk-...">
+                    </div>
+                    <button id="save-settings-btn" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Settings</button>
+                </div>
+            </div>
+        </div>
         
         <!-- Main Terminal / Chat Area -->
         <main class="terminal-container">

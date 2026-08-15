@@ -20,7 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add logic for Browse button
     const browseBtn = document.getElementById("browse-btn");
     if (browseBtn) {
-        browseBtn.addEventListener("click", async () => {
+        browseBtn.addEventListener("click", async (e) => {
+            e.preventDefault(); // Stop form submission / button default if any
+            const originalText = browseBtn.textContent;
+            browseBtn.textContent = "...";
             try {
                 const response = await fetch('/api/browse_folder');
                 const data = await response.json();
@@ -29,6 +32,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (err) {
                 console.error("Failed to browse folder:", err);
+            } finally {
+                browseBtn.textContent = originalText;
+            }
+        });
+    }
+
+    // Modal Logic
+    const settingsBtn = document.getElementById("settings-btn");
+    const modal = document.getElementById("settings-modal");
+    const closeModalBtn = document.querySelector(".close-modal");
+    const saveSettingsBtn = document.getElementById("save-settings-btn");
+
+    if (settingsBtn && modal && closeModalBtn) {
+        settingsBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            modal.classList.add("show");
+        });
+
+        closeModalBtn.addEventListener("click", () => {
+            modal.classList.remove("show");
+        });
+
+        if (saveSettingsBtn) {
+            saveSettingsBtn.addEventListener("click", () => {
+                modal.classList.remove("show");
+            });
+        }
+
+        // Close when clicking outside of modal content
+        window.addEventListener("click", (e) => {
+            if (e.target === modal) {
+                modal.classList.remove("show");
             }
         });
     }

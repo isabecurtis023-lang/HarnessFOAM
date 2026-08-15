@@ -30,18 +30,30 @@ def read_root():
 
 @app.get("/api/browse_folder")
 def browse_folder():
-    """Opens a native host OS folder picker dialog (only works for local server)."""
-    import tkinter as tk
-    from tkinter import filedialog
+    """Opens a native host OS folder picker dialog via a subprocess to avoid threading issues."""
+    import subprocess
+    import sys
     
-    # Hide the main tkinter window
-    root = tk.Tk()
-    root.attributes("-topmost", True)
-    root.withdraw()
+    # Run a tiny python script in a separate process to show the dialog
+    script = (
+        "import tkinter as tk, tkinter.filedialog as fd; "
+        "root=tk.Tk(); "
+        "root.attributes('-topmost', True); "
+        "root.withdraw(); "
+        "print(fd.askdirectory(), end='')"
+    )
     
-    folder_path = filedialog.askdirectory(title="Select Project Output Directory")
-    root.destroy()
-    
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True
+        )
+        folder_path = result.stdout.strip()
+    except Exception as e:
+        print(f"Dialog error: {e}")
+        folder_path = ""
+        
     return {"path": folder_path}
 
 @app.websocket("/api/stream")
