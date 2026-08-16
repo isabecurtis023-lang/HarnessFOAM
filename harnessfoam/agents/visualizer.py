@@ -21,6 +21,15 @@ Analyze the user requirement. You MUST ALWAYS write a Python script using the `p
 If the user does not explicitly specify what to visualize, default to visualizing the velocity magnitude (U).
 Set is_visualization_required to True always, unless the user explicitly commands you not to visualize anything.
 
+CRITICAL PYVISTA INSTRUCTION:
+Do NOT use `pv.OpenFOAMReader(".")` or pass a directory name to the reader, as this causes an AttributeError in older VTK versions.
+Instead, you MUST create an empty file named `case.foam` in the current directory and pass it to the reader using `pv.OpenFOAMReader("case.foam")`. For example:
+```python
+import pyvista as pv
+with open("case.foam", "w") as f: pass
+reader = pv.OpenFOAMReader("case.foam")
+```
+
 User requirement: {user_requirement}
 
 Output ONLY the structured JSON. Do not provide explanations.
