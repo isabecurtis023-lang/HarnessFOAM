@@ -6,6 +6,43 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 from harnessfoam.agents.graph import create_workflow, SimulationState
+from langchain_core.callbacks import AsyncCallbackHandler
+
+class WebSocketStreamingCallbackHandler(AsyncCallbackHandler):
+    def __init__(self, websocket: WebSocket, agent_name: str = "LLM"):
+        self.websocket = websocket
+        self.agent_name = agent_name
+
+    async def on_chat_model_start(self, serialized: dict, messages: list, **kwargs):
+        # Extract prompt from messages
+        prompt_text = "\n".join([m.content for m in messages[0]]) if messages and messages[0] else ""
+        try:
+            await self.websocket.send_json({
+                "type": "llm_start",
+                "agent": self.agent_name,
+                "prompt": prompt_text
+            })
+        except Exception:
+            pass
+
+    async def on_llm_new_token(self, token: str, **kwargs):
+        try:
+            await self.websocket.send_json({
+                "type": "llm_token",
+                "agent": self.agent_name,
+                "token": token
+            })
+        except Exception:
+            pass
+        
+    async def on_llm_end(self, response, **kwargs):
+        try:
+            await self.websocket.send_json({
+                "type": "llm_end",
+                "agent": self.agent_name
+            })
+        except Exception:
+            pass
 
 app = FastAPI(title="HarnessFOAM API", description="Web API for HarnessFOAM CFD Agent")
 
@@ -636,6 +673,7 @@ echo "Simulation complete!"
         if api_base: llm_kwargs["base_url"] = api_base
         if model:    llm_kwargs["model"]    = model
         if api_key:  llm_kwargs["api_key"]  = api_key
+        llm_kwargs["callbacks"] = [WebSocketStreamingCallbackHandler(websocket, agent_name="Agent")]
         
         await websocket.send_json({"type": "info", "message": f"Initializing workflow for: {prompt}"})
         await websocket.send_json({"type": "step", "agent": "Architect Agent", "message": "Planning file structure and dependencies..."})

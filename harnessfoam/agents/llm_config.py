@@ -9,6 +9,7 @@ def build_llm(temperature: float = 0.0, **kwargs) -> BaseChatModel:
     """
     # Runtime kwargs take precedence over .env variables
     provider = kwargs.get("provider", os.getenv("LLM_PROVIDER", "openai")).lower()
+    callbacks = kwargs.get("callbacks", None)
     
     if provider == "openai":
         # 2026-08-15 – Claude Opus 4.6 (Thinking): increased timeout for slow 科技云 models
@@ -20,6 +21,7 @@ def build_llm(temperature: float = 0.0, **kwargs) -> BaseChatModel:
             timeout=600,    # 10 min – thinking models on 科技云 can be very slow
             max_retries=2,
             streaming=True,  # keep connection alive during long generation
+            callbacks=callbacks
         )
     # Extensible for Anthropic, Bedrock, etc.
     elif provider == "anthropic":
@@ -28,7 +30,8 @@ def build_llm(temperature: float = 0.0, **kwargs) -> BaseChatModel:
             return ChatAnthropic(
                 model_name=kwargs.get("model") or os.getenv("LLM_MODEL", "claude-3-5-sonnet-20240620"),
                 temperature=temperature,
-                anthropic_api_key=kwargs.get("api_key") or os.getenv("ANTHROPIC_API_KEY")
+                anthropic_api_key=kwargs.get("api_key") or os.getenv("ANTHROPIC_API_KEY"),
+                callbacks=callbacks
             )
         except ImportError:
             raise ImportError("Please install langchain-anthropic to use Anthropic models.")

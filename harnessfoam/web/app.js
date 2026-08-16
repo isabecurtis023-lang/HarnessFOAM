@@ -383,17 +383,51 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("console-output").style.display = activeTabId === 'tab-console' ? "flex" : "none";
         }
         
+            tabConsole.classList.remove("active");
+            tabConsole.style.background = "transparent";
+            tabConsole.style.color = "var(--text-muted)";
+        }
+        if (tabAgentContext) {
+            tabAgentContext.classList.remove("active");
+            tabAgentContext.style.background = "transparent";
+            tabAgentContext.style.color = "var(--text-muted)";
+        }
         if (tabFileViewer) {
-            tabFileViewer.style.background = activeTabId === 'tab-file-viewer' ? "rgba(255,255,255,0.1)" : "transparent";
-            tabFileViewer.style.border = activeTabId === 'tab-file-viewer' ? "1px solid rgba(255,255,255,0.05)" : "1px solid transparent";
-            tabFileViewer.style.borderBottom = "none";
-            tabFileViewer.style.color = activeTabId === 'tab-file-viewer' ? "var(--text-main)" : "var(--text-muted)";
-            document.getElementById("file-viewer").style.display = activeTabId === 'tab-file-viewer' ? "flex" : "none";
+            tabFileViewer.classList.remove("active");
+            tabFileViewer.style.background = "transparent";
+            tabFileViewer.style.color = "var(--text-muted)";
+        }
+
+        if (tabName === "console") {
+            if (consoleOutput) consoleOutput.style.display = "flex";
+            if (tabConsole) {
+                tabConsole.classList.add("active");
+                tabConsole.style.background = "rgba(255,255,255,0.1)";
+                tabConsole.style.color = "var(--text-main)";
+            }
+        } else if (tabName === "agent_context") {
+            if (agentContextOutput) agentContextOutput.style.display = "flex";
+            if (tabAgentContext) {
+                tabAgentContext.classList.add("active");
+                tabAgentContext.style.background = "rgba(255,255,255,0.1)";
+                tabAgentContext.style.color = "var(--text-main)";
+            }
+        } else if (tabName === "file_viewer") {
+            if (fileViewer) fileViewer.style.display = "flex";
+            if (tabFileViewer) {
+                tabFileViewer.classList.add("active");
+                tabFileViewer.style.background = "rgba(255,255,255,0.1)";
+                tabFileViewer.style.color = "var(--text-main)";
+            }
         }
     }
 
-    if (tabConsole) tabConsole.addEventListener("click", () => setTabActive('tab-console'));
-    
+    if (tabConsole) {
+        tabConsole.addEventListener("click", () => switchToTab("console"));
+    }
+    if (tabAgentContext) {
+        tabAgentContext.addEventListener("click", () => switchToTab("agent_context"));
+    }
     if (tabFileViewer) {
         tabFileViewer.addEventListener("click", (e) => {
             if (e.target.id === "close-file-viewer-btn") {
@@ -770,6 +804,54 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (data.type === "step") {
                 const agentClass = data.agent.startsWith("OpenFOAM") ? "agent-Runner" : `agent-${data.agent.split(" ")[0]}`;
                 appendLog(`<span class="log-agent ${agentClass}">[${data.agent}]</span> <span>${data.message}</span>`);
+            } else if (data.type === "llm_start") {
+                const acContainer = document.getElementById("agent-context-output");
+                if (acContainer) {
+                    const agentDiv = document.createElement("div");
+                    agentDiv.className = "log-entry";
+                    agentDiv.style.borderLeft = "3px solid #3b82f6";
+                    agentDiv.style.paddingLeft = "10px";
+                    agentDiv.style.marginBottom = "1rem";
+                    
+                    const header = document.createElement("div");
+                    header.innerHTML = `<strong style="color: #60a5fa;">[${data.agent}] System Prompt & Context:</strong>`;
+                    
+                    const prompt = document.createElement("pre");
+                    prompt.style.whiteSpace = "pre-wrap";
+                    prompt.style.color = "#94a3b8";
+                    prompt.style.fontSize = "0.75rem";
+                    prompt.style.marginTop = "0.5rem";
+                    prompt.textContent = data.prompt;
+                    
+                    const outputHeader = document.createElement("div");
+                    outputHeader.innerHTML = `<strong style="color: #10b981; margin-top: 0.5rem; display:block;">[${data.agent}] Model Output:</strong>`;
+                    
+                    const tokenContainer = document.createElement("div");
+                    tokenContainer.className = "llm-stream-container";
+                    tokenContainer.style.color = "#e2e8f0";
+                    tokenContainer.style.whiteSpace = "pre-wrap";
+                    tokenContainer.style.marginTop = "0.25rem";
+                    tokenContainer.id = "current-llm-stream";
+                    
+                    agentDiv.appendChild(header);
+                    agentDiv.appendChild(prompt);
+                    agentDiv.appendChild(outputHeader);
+                    agentDiv.appendChild(tokenContainer);
+                    acContainer.appendChild(agentDiv);
+                    acContainer.scrollTop = acContainer.scrollHeight;
+                }
+            } else if (data.type === "llm_token") {
+                const streamContainer = document.getElementById("current-llm-stream");
+                if (streamContainer) {
+                    streamContainer.textContent += data.token;
+                    const acContainer = document.getElementById("agent-context-output");
+                    if (acContainer) acContainer.scrollTop = acContainer.scrollHeight;
+                }
+            } else if (data.type === "llm_end") {
+                const streamContainer = document.getElementById("current-llm-stream");
+                if (streamContainer) {
+                    streamContainer.removeAttribute("id"); // finalize it
+                }
             } else if (data.type === "complete") {
                 appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
                 if (data.directory) {
