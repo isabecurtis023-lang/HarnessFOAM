@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=6">
+    <link rel="stylesheet" href="/static/style.css?v=7">
 </head>
 <body>
     <div class="app-container">
@@ -22,6 +22,7 @@
                 </div>
 
             </header>
+            <button id="settings-bottom-btn" class="settings-nav-btn" title="Settings"><span class="settings-icon" aria-hidden="true">⚙</span><span>Setting</span></button>
             
             <div class="input-group">
                 <label for="prompt">Simulation Requirement</label>
@@ -73,7 +74,6 @@
                     <span id="connection-status">Agent Connection: Disconnected</span>
                 </div>
             </div>
-            <button id="settings-bottom-btn" class="settings-nav-btn" title="Settings"><span class="settings-icon" aria-hidden="true">⚙</span><span>Setting</span></button>
         </aside>
         
         <div class="resizer" id="cp-resizer"></div>
@@ -214,6 +214,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=22"></script>
+    <script src="/static/app.js?v=23"></script>
 </body>
 </html>
