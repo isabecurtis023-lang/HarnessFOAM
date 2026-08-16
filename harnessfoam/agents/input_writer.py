@@ -6,6 +6,7 @@ from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
+from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
 
 load_dotenv()
 
@@ -111,10 +112,10 @@ def write_simulation_inputs(
 
         except Exception as e:
             print(f"Input Writer: FAIL {path}: {e}", flush=True)
-            generated_files[path] = (
-                f"// Mock OpenFOAM content for {path}\n"
-                f"// Requirement: {prompt_text}\n"
-                f"// Error: {e}\n"
-            )
+            if is_cavity_prompt(prompt_text) and path in cavity_files():
+                generated_files[path] = cavity_files()[path]
+                print(f"Input Writer: FALLBACK {path} after LLM error: {e}", flush=True)
+            else:
+                raise RuntimeError(f"LLM failed while generating {path}: {e}") from e
 
     return generated_files

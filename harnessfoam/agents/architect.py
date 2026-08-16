@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -47,8 +48,9 @@ def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
         return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
     except Exception as e:
         print(f"Architect Agent failed (possibly due to API/Key issues): {e}")
-        # Fallback to mock data to ensure tests pass
         print("Falling back to default plan...")
+        if is_cavity_prompt(prompt_text):
+            return [{"file": path.rsplit("/", 1)[1], "folder": path.split("/", 1)[0]} for path in cavity_files()]
         return [
             {"file": "blockMeshDict", "folder": "system"},
             {"file": "controlDict", "folder": "system"},

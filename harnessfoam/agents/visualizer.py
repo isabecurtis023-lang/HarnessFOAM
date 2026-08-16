@@ -64,11 +64,28 @@ def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None) -> 
             "pyvista_script": result.pyvista_script
         }
     except Exception as e:
-        print(f"Visualizer Agent failed: {e}")
-        # Return the error in the script field so server.py can display it if it's a parsing error
-        raise Exception(f"Failed to generate visualization script: {e}")
+        print(f"Visualizer Agent failed, using default post-processing script: {e}")
+        # Deep Driving must remain useful when the model is unavailable.  This
+        # is a real post-processing script, never a placeholder response.
+        return {
+            "is_visualization_required": True,
+            "pyvista_script": '''import pyvista as pv
+with open("case.foam", "a", encoding="utf-8"):
+    pass
+reader = pv.OpenFOAMReader("case.foam")
+if reader.time_values:
+    reader.set_active_time_value(reader.time_values[-1])
+mesh = reader.read()
+plotter = pv.Plotter(off_screen=True)
+plotter.add_mesh(mesh, scalars="U", show_edges=False)
+plotter.view_xy()
+plotter.screenshot("visualization.png")
+plotter.close()
+'''
+        }
 import subprocess
 import base64
+import sys
 
 def execute_visualization(case_dir: str, pyvista_script: str) -> str:
     """Executes the PyVista script and returns the resulting image as base64."""
@@ -83,7 +100,10 @@ def execute_visualization(case_dir: str, pyvista_script: str) -> str:
         
     try:
         import shutil
-        python_exe = "python3" if shutil.which("python3") else "python"
+        # On Windows, `python3` may resolve to the Microsoft Store alias and
+        # use a different environment from the application.  Always reuse the
+        # interpreter running HarnessFOAM there.
+        python_exe = sys.executable if os.name == "nt" else (shutil.which("python3") or sys.executable)
         
         # In a real environment, this would run `python viz_postprocess.py`
         # PyVista in headless Linux (like WSL) usually requires xvfb

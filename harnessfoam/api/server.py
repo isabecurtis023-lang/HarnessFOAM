@@ -183,11 +183,17 @@ def check_env():
     # Check WSL gmsh
     if shutil.which("wsl"):
         try:
-            res = subprocess.run(["wsl", "python3", "-c", "import gmsh"], capture_output=True)
+            res = subprocess.run(
+                ["wsl", "python3", "-c", "import gmsh"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
             if res.returncode != 0:
                 status["wsl_missing_gmsh"] = True
-        except:
-            pass
+        except (subprocess.TimeoutExpired, OSError):
+            # Environment probing must never leave the UI in a pending state.
+            status["wsl_missing_gmsh"] = True
 
     return status
 
@@ -793,7 +799,9 @@ echo "Simulation complete!"
             post_prompt=post_prompt,
             case_dir=output_dir,
             llm_kwargs=llm_kwargs,
-            max_errors=max_loops
+            max_errors=max_loops,
+            # Deep Driving includes the visualizer stage automatically.
+            auto_postprocess=True
         )
         
         # Execute the actual graph with real-time streaming!
@@ -842,6 +850,8 @@ echo "Simulation complete!"
             "directory": output_dir,
             "files": files_created
         }
+
+        response_payload["postprocess_status"] = final_state.get("logs", {}).get("postprocess_status", "SKIPPED")
         
         if final_state.get("image_base64"):
             response_payload["image_base64"] = final_state.get("image_base64")

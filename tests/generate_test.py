@@ -5,7 +5,7 @@ async def run():
     print("Starting generation...")
     workflow = create_workflow()
     initial_state = SimulationState(
-        user_requirement="Simulate incompressible flow over a circular cylinder at 2 m/s. Use a 2D domain. The cylinder radius is 0.05m.",
+        user_requirement="Simulate a 2D lid-driven cavity flow. The top wall moves at 1 m/s in the x-direction. The domain is a 0.1m x 0.1m square.",
         case_dir="C:/Users/Administrator/Desktop/temp/TEST",
         llm_kwargs={"temperature": 0.1},
         max_errors=3

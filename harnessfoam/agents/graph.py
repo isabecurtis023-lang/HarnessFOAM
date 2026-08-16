@@ -200,7 +200,15 @@ echo "Simulation complete!"
         # Determine the correct shell executor based on OS
         import shutil
         if shutil.which("wsl"):
-            cmd = ["wsl", "bash", "./Allrun"]
+            # subprocess keeps the Windows cwd; explicitly translate it so the
+            # WSL process runs in the case directory rather than /mnt/c/... by
+            # accident (and so relative OpenFOAM paths resolve consistently).
+            abs_case_dir = os.path.abspath(state['case_dir'])
+            if len(abs_case_dir) >= 2 and abs_case_dir[1] == ':':
+                wsl_case_dir = "/mnt/" + abs_case_dir[0].lower() + abs_case_dir[2:].replace('\\', '/')
+            else:
+                wsl_case_dir = abs_case_dir
+            cmd = ["wsl", "bash", "-lc", f"cd '{wsl_case_dir}' && bash ./Allrun"]
         elif shutil.which("bash"):
             cmd = ["bash", "./Allrun"]
         else:
@@ -279,21 +287,31 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     print(f"Visualization Agent: Generating visuals...")
     
     # If the user provided a custom post-processing prompt, use it; else use the main prompt
-    viz_prompt = state.get('post_prompt') or state.get('prompt')
+    viz_prompt = state.get('post_prompt') or (
+        f"{state.get('prompt', '')}\nAutomatically post-process the completed case and render the velocity field U."
+    )
     
     llm_kwargs = state.get('llm_kwargs') or {}
     viz_results = generate_visualization_script(viz_prompt, llm_kwargs=llm_kwargs)
     state['logs']['is_visualization_required'] = viz_results['is_visualization_required']
     state['logs']['pyvista_script'] = viz_results['pyvista_script']
     
-    if viz_results['is_visualization_required'] and state['status'] == 'SUCCESS':
+    # Deep Driving always runs the post-processing agent after a successful
+    # solver run.  The model may still choose the field and plot style, but it
+    # cannot accidentally disable the automatic post-processing stage.
+    if state['status'] == 'SUCCESS':
         print("Visualizer Agent generated PyVista script. Executing locally...")
         img_base64 = execute_visualization(state['case_dir'], viz_results['pyvista_script'])
         if img_base64:
             state['image_base64'] = img_base64
+            state['logs']['postprocess_status'] = 'SUCCESS'
             print("Visualization successfully rendered.")
+        else:
+            state['logs']['postprocess_status'] = 'FAILED'
+            state['logs']['postprocess_error'] = 'Visualizer script did not produce visualization.png'
     else:
         print("No visualization requested or simulation failed.")
+        state['logs']['postprocess_status'] = 'SKIPPED'
         
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state

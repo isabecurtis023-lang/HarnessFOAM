@@ -85,6 +85,38 @@ document.addEventListener("DOMContentLoaded", () => {
         consoleOutput.appendChild(div);
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }
+
+    // Check local Python/WSL dependencies.  This used to be missing entirely,
+    // leaving the HTML placeholder "Checking Environment..." forever.
+    const envDot = document.getElementById("env-dot");
+    const envStatus = document.getElementById("env-status");
+    function checkEnvironmentStatus() {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        fetch('/api/check_env', { signal: controller.signal })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                const missing = data.missing_libs || [];
+                const wslGmshMissing = Boolean(data.wsl_missing_gmsh);
+                if (!missing.length && !wslGmshMissing) {
+                    envDot.style.backgroundColor = "#10b981";
+                    envStatus.innerHTML = 'Environment: <span style="color:#10b981">Ready</span>';
+                } else {
+                    envDot.style.backgroundColor = "#f59e0b";
+                    const details = missing.length ? `Missing: ${missing.join(', ')}` : 'WSL gmsh unavailable';
+                    envStatus.innerHTML = `Environment: <span style="color:#f59e0b">${details}</span>`;
+                }
+            })
+            .catch(error => {
+                envDot.style.backgroundColor = "#ef4444";
+                const message = error.name === "AbortError" ? "Check timed out" : "Status unavailable";
+                envStatus.innerHTML = `Environment: <span style="color:#ef4444">${message}</span>`;
+            })
+            .finally(() => clearTimeout(timeout));
+    }
     
     // Check OpenFOAM Status
     const ofDot = document.getElementById("openfoam-dot");
@@ -150,6 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     checkOFStatus();
+    checkEnvironmentStatus();
     // 2026-08-15 – Gemini 3.5 Flash: Initial button states update
     updateButtonStates();
 
