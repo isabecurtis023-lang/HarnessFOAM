@@ -39,12 +39,23 @@ def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict 
             try:
                 with open(mesh_script_path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
-                if "import gmsh" in content:
-                    print(f"Meshing Agent: SKIP mesh.py generation (already exists and valid)", flush=True)
+                
+                # Rigorous check: verify it's a complete gmsh script
+                required_tokens = [
+                    "import gmsh", 
+                    "gmsh.initialize", 
+                    "gmsh.write", 
+                    "gmsh.finalize"
+                ]
+                
+                if all(token in content for token in required_tokens):
+                    print(f"Meshing Agent: SKIP mesh.py generation (already exists and passed strict structural validation)", flush=True)
                     return {
                         "is_gmsh_required": True,
                         "python_script": content
                     }
+                else:
+                    print(f"Meshing Agent: Existing mesh.py is incomplete or invalid. Regenerating...", flush=True)
             except Exception as e:
                 print(f"Meshing Agent: Failed to read existing mesh.py: {e}")
 
