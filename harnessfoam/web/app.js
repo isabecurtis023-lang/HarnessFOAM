@@ -1080,6 +1080,16 @@ document.addEventListener("DOMContentLoaded", () => {
                             responseHeader.className = "llm-context-header";
                             responseHeader.style.marginTop = "10px";
                             responseHeader.textContent = `[${data.agent}] Generation`;
+                            
+                            // 2026-08-16 - Add a pulsating loading indicator
+                            const loadingSpan = document.createElement("span");
+                            loadingSpan.className = "llm-loading-indicator";
+                            loadingSpan.style.color = "#10b981";
+                            loadingSpan.style.marginLeft = "10px";
+                            loadingSpan.style.fontSize = "0.9em";
+                            loadingSpan.innerHTML = "<i>(Thinking... this may take up to 60s)</i>";
+                            responseHeader.appendChild(loadingSpan);
+                            
                             const responseContent = document.createElement("div");
                             responseContent.className = "llm-response markdown-body";
                             responseContent.id = "current-llm-stream";
@@ -1094,6 +1104,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     } else if (data.type === "llm_token") {
                         const streamContainer = document.getElementById("current-llm-stream");
                         if (streamContainer) {
+                            // Hide the loading indicator once tokens start streaming
+                            const loadingInd = streamContainer.parentElement.querySelector('.llm-loading-indicator');
+                            if (loadingInd) loadingInd.style.display = "none";
+                            
                             streamContainer.innerHTML += data.token.replace(/\n/g, '<br>').replace(/```/g, '<hr>');
                             const agentContextOutput = document.getElementById("agent-context-output");
                             if (agentContextOutput) agentContextOutput.scrollTop = agentContextOutput.scrollHeight;
@@ -1102,6 +1116,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         const streamContainer = document.getElementById("current-llm-stream");
                         if (streamContainer) {
                             streamContainer.removeAttribute("id"); // finalize it
+                            const loadingInd = streamContainer.parentElement.querySelector('.llm-loading-indicator');
+                            if (loadingInd) loadingInd.style.display = "none";
                         }
                     } else if (data.type === "complete") {
                         appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
