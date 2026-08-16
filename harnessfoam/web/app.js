@@ -1041,7 +1041,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 ws.onopen = () => {
                     connectionDot.classList.add("connected");
                     connectionStatus.textContent = "Connected";
-                    ws.send(JSON.stringify({ action: "postprocess", output_dir: outputDir }));
+                    
+                    const postPrompt = document.getElementById("post_prompt") ? document.getElementById("post_prompt").value.trim() : "";
+                    const apiBase = document.getElementById("api-base") ? document.getElementById("api-base").value.trim() : "";
+                    const model = document.getElementById("model-selection") ? document.getElementById("model-selection").value.trim() : "";
+                    const apiKey = document.getElementById("api-key") ? document.getElementById("api-key").value.trim() : "";
+
+                    ws.send(JSON.stringify({ 
+                        action: "postprocess", 
+                        output_dir: outputDir,
+                        post_prompt: postPrompt,
+                        api_base: apiBase,
+                        model: model,
+                        api_key: apiKey
+                    }));
                 };
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
@@ -1049,6 +1062,47 @@ document.addEventListener("DOMContentLoaded", () => {
                         appendLog(`<span class="info">ℹ️ ${data.message}</span>`);
                     } else if (data.type === "step") {
                         appendLog(`<span class="log-agent agent-Runner">[${data.agent}]</span> <span>${data.message}</span>`);
+                    } else if (data.type === "llm_start") {
+                        const tabAgentContext = document.getElementById("tab-agent-context");
+                        if (tabAgentContext) tabAgentContext.click(); // switch tab!
+                        
+                        const agentContextOutput = document.getElementById("agent-context-output");
+                        if (agentContextOutput) {
+                            const block = document.createElement("div");
+                            block.className = "llm-context-block";
+                            const header = document.createElement("div");
+                            header.className = "llm-context-header";
+                            header.textContent = `[${data.agent}] Prompt Sent`;
+                            const pre = document.createElement("pre");
+                            pre.textContent = data.prompt;
+                            
+                            const responseHeader = document.createElement("div");
+                            responseHeader.className = "llm-context-header";
+                            responseHeader.style.marginTop = "10px";
+                            responseHeader.textContent = `[${data.agent}] Generation`;
+                            const responseContent = document.createElement("div");
+                            responseContent.className = "llm-response markdown-body";
+                            responseContent.id = "current-llm-stream";
+                            
+                            block.appendChild(header);
+                            block.appendChild(pre);
+                            block.appendChild(responseHeader);
+                            block.appendChild(responseContent);
+                            agentContextOutput.appendChild(block);
+                            agentContextOutput.scrollTop = agentContextOutput.scrollHeight;
+                        }
+                    } else if (data.type === "llm_token") {
+                        const streamContainer = document.getElementById("current-llm-stream");
+                        if (streamContainer) {
+                            streamContainer.innerHTML += data.token.replace(/\n/g, '<br>').replace(/```/g, '<hr>');
+                            const agentContextOutput = document.getElementById("agent-context-output");
+                            if (agentContextOutput) agentContextOutput.scrollTop = agentContextOutput.scrollHeight;
+                        }
+                    } else if (data.type === "llm_end") {
+                        const streamContainer = document.getElementById("current-llm-stream");
+                        if (streamContainer) {
+                            streamContainer.removeAttribute("id"); // finalize it
+                        }
                     } else if (data.type === "complete") {
                         appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
                         if (data.image_base64) {
