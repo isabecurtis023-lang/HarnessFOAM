@@ -70,6 +70,25 @@ body {
 .action-grid .postprocess-action,
 .action-grid .stop-action { background-color: #4b5563; cursor: not-allowed; }
 
+.sidebar-footer {
+    position: absolute;
+    left: 2rem;
+    right: 2rem;
+    bottom: 1rem;
+    z-index: 4;
+    padding-top: 0.65rem;
+    background: linear-gradient(to bottom, rgba(26, 29, 39, 0.2), var(--bg-panel) 18%);
+}
+.status-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.status-stack .status-indicator { margin-top: 0; }
+.sidebar-footer .settings-nav-btn { margin-top: 0.55rem; }
+
 /* 2026-08-15 – Gemini 3.5 Flash: Sidebar collapse toggle button and state styles */
 .toggle-cp-btn {
     position: absolute;
@@ -115,6 +134,7 @@ body {
 .control-panel.collapsed + #cp-resizer {
     display: none !important;
 }
+.control-panel.collapsed .sidebar-footer { left: 0; right: 0; }
 
 header {
     margin-bottom: 2.5rem;

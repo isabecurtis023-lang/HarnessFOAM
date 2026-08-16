@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=8">
+    <link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 <body>
     <div class="app-container">
@@ -22,8 +22,6 @@
                 </div>
 
             </header>
-            <button id="settings-bottom-btn" class="settings-nav-btn" title="Settings"><span class="settings-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
-            
             <div class="input-group">
                 <label for="prompt">Simulation Requirement</label>
                 <textarea id="prompt" placeholder="e.g. Simulate incompressible flow over a circular cylinder at 2 m/s...">Simulate a 2D lid-driven cavity flow. The top wall moves at 1 m/s in the x-direction. The domain is a 0.1m x 0.1m square.</textarea>
@@ -52,7 +50,8 @@
                 <button id="stop-btn" class="primary-btn stop-action" disabled>Stop</button>
             </div>
 
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="sidebar-footer">
+                <div class="status-stack">
                 <div class="status-indicator">
                     <div class="dot" id="env-dot" style="background-color: #fbbf24;"></div>
                     <span id="env-status">Checking Environment...</span>
@@ -73,6 +72,8 @@
                     <div class="dot" id="connection-dot"></div>
                     <span id="connection-status">Agent Connection: Disconnected</span>
                 </div>
+                </div>
+                <button id="settings-bottom-btn" class="settings-nav-btn" title="Settings"><span class="settings-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
             </div>
         </aside>
         
