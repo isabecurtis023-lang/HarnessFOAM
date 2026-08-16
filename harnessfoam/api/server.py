@@ -90,6 +90,9 @@ class OptimizationRequest(BaseModel):
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=web_dir), name="static")
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "assets")
+if os.path.isdir(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 def read_root():

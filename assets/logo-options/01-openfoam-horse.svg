@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 240" role="img" aria-label="OpenFOAM horse wordmark option 1">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+<rect width="760" height="240" rx="30" fill="#0b1220"/>
+<g fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M106 143c28-58 96-78 183-52 41 12 72 9 111-13l31-18-8 35 35 14-47 13c-25 32-64 47-110 46l-33 49M190 159l-10 50M310 164l8 45M422 137l28 57"/>
+ <path d="M430 81l27-35 23 9 21-25 18 36-28 23M159 100c-37-10-68-2-86 16"/>
+</g>
+<text x="104" y="151" fill="#e0f2fe" font-family="Arial Black,Arial,sans-serif" font-size="48" font-weight="900" letter-spacing="-2">OpenFOAM</text>
+<path d="M112 178h365" stroke="#64748b" stroke-width="2"/>
+<text x="490" y="130" fill="#e2e8f0" font-family="Arial,sans-serif" font-size="31" font-weight="700">Harness</text>
+<text x="492" y="161" fill="#94a3b8" font-family="monospace" font-size="13" letter-spacing="3">CFD AGENT SYSTEM</text>
+</svg>
