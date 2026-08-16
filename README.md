@@ -171,6 +171,7 @@ The Web UI and MCP response expose:
 * `runtime_metrics.time_steps` and `runtime_metrics.last_time`;
 * maximum Courant number and continuity error;
 * `postprocess_status` and the generated visualization image.
+* `retry_history`, including each bounded recovery attempt, its error excerpt, suggestions, and whether another retry remains.
 
 The built-in 2-D lid-driven cavity is used as an offline smoke case when the configured LLM is unavailable. Normal operation still calls the LLM from `.env` to generate the case files; the fallback prevents an API outage from producing fake OpenFOAM dictionaries.
 

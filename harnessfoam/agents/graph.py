@@ -23,6 +23,7 @@ class SimulationState(TypedDict, total=False):
     llm_kwargs: Optional[Dict[str, Any]]  # Runtime API overrides passed from server
     memory_enabled: bool
     memory_limits: Dict[str, int]
+    retry_history: List[Dict[str, Any]]
 
 from harnessfoam.agents.architect import plan_simulation
 from harnessfoam.validation import validate_case_files, validate_runtime
@@ -351,6 +352,12 @@ def reviewer_node(state: SimulationState) -> SimulationState:
     llm_kwargs = state.get('llm_kwargs') or {}
     review_results = analyze_errors(error_logs, llm_kwargs=llm_kwargs, memory_context=prompt_context(state.get('case_dir'), 'reviewer', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
     state['logs']['review_suggestions'] = review_results['suggestions']
+    state.setdefault('retry_history', []).append({
+        'attempt': state['errors'],
+        'error': error_logs[-2000:],
+        'suggestions': review_results['suggestions'],
+        'status': 'RETRY_PENDING' if state['errors'] < state.get('max_errors', 3) else 'RETRY_EXHAUSTED',
+    })
     # Keep a local failure ledger for reproducible retries and future active
     # learning; do not store prompts or logs outside the selected case.
     import json

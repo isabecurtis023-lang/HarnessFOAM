@@ -971,6 +971,7 @@ echo "Simulation complete!"
         response_payload["postprocess_metrics"] = final_state.get("logs", {}).get("postprocess_metrics", {})
         response_payload["visual_review"] = final_state.get("logs", {}).get("visual_review", {})
         response_payload["failure_ledger"] = final_state.get("logs", {}).get("failure_ledger_summary", {})
+        response_payload["retry_history"] = final_state.get("retry_history", [])
         from harnessfoam.telemetry import estimate_cost
         callback_usage = {}
         for callback in llm_kwargs.get("callbacks", []):
