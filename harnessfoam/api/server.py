@@ -437,7 +437,7 @@ def stop_execution():
     return {"status": "ok", "message": "Stopped successfully." if stopped else "No active process to stop."}
 
 # 2026-08-15 – Gemini 3.5 Flash: Helper to run a command and stream output without using asyncio subprocesses (prevents NotImplementedError on Windows)
-async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket: WebSocket):
+async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket: WebSocket, env: dict = None):
     import subprocess
     import threading
     import queue
@@ -464,7 +464,8 @@ async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket
             text=True,
             bufsize=1,
             encoding="utf-8",
-            errors="replace"
+            errors="replace",
+            env=env
         )
         active_process = proc
         
@@ -690,6 +691,8 @@ echo "Simulation complete!"
             # Run in executor so it doesn't block the async event loop, allowing websocket tokens to stream
             viz_results = await loop.run_in_executor(None, func)
             
+            await websocket.send_json({"type": "step", "agent": "Visualizer Agent", "message": "LLM generation finished. Writing PyVista script..."})
+            
             pyvista_script = viz_results.get('pyvista_script', '')
             
             import sys
@@ -725,11 +728,17 @@ echo "Simulation complete!"
             if shutil.which("xvfb-run") and os.name == "posix":
                 cmd = ["xvfb-run", "-a"] + cmd
                 
+            # Force off_screen via env var to prevent any VTK message boxes from hanging the script
+            env = os.environ.copy()
+            env["PYVISTA_OFF_SCREEN"] = "true"
+            env["VTK_DISABLE_VIS_TEST"] = "1"
+            
             rc = await run_command_and_stream(
                 cmd,
                 cwd=cwd,
                 agent_name="Visualizer",
-                websocket=websocket
+                websocket=websocket,
+                env=env
             )
             
             if rc == 0:

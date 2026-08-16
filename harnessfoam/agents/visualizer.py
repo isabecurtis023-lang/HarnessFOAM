@@ -35,6 +35,7 @@ mesh = reader.read()
 plotter = pv.Plotter(off_screen=True)
 plotter.add_mesh(mesh)
 plotter.screenshot('visualization.png')
+plotter.close()
 ```
 
 User requirement: {user_requirement}
