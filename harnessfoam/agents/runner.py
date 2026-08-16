@@ -10,7 +10,9 @@ class SlurmScriptResult(BaseModel):
     script_content: str = Field(description="The complete Slurm submission script content")
 
 def build_runner_agent(llm_kwargs: dict = None):
-    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
+    kwargs = (llm_kwargs or {}).copy()
+    if 'temperature' not in kwargs: kwargs['temperature'] = 0.1
+    llm = build_llm(**kwargs)
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM and HPC clusters.

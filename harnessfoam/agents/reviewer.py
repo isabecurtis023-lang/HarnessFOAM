@@ -17,7 +17,9 @@ class ReviewResult(BaseModel):
     fixes: List[FixSuggestion] = Field(description="List of files to fix and how to fix them")
 
 def build_reviewer_agent(llm_kwargs: dict = None):
-    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
+    kwargs = (llm_kwargs or {}).copy()
+    if 'temperature' not in kwargs: kwargs['temperature'] = 0.1
+    llm = build_llm(**kwargs)
     
     prompt = PromptTemplate(
         template="""You are an expert in OpenFOAM simulation and numerical modeling.

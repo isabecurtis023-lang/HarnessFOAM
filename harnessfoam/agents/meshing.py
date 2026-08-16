@@ -12,7 +12,9 @@ class MeshingScriptResult(BaseModel):
     python_script: str = Field(description="The complete python script to generate the .msh file using the gmsh library. Empty if not required.")
 
 def build_meshing_agent(llm_kwargs: dict = None):
-    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
+    kwargs = (llm_kwargs or {}).copy()
+    if 'temperature' not in kwargs: kwargs['temperature'] = 0.1
+    llm = build_llm(**kwargs)
     
     prompt = PromptTemplate(
         template="""You are an expert in computational fluid dynamics and mesh generation.

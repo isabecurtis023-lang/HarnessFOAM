@@ -16,7 +16,9 @@ class ArchitectPlan(BaseModel):
     subtasks: List[FolderFileStruct] = Field(description="List of files to generate")
 
 def build_architect_agent(llm_kwargs: dict = None):
-    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
+    kwargs = (llm_kwargs or {}).copy()
+    if 'temperature' not in kwargs: kwargs['temperature'] = 0.1
+    llm = build_llm(**kwargs)
     
     prompt = PromptTemplate(
         template="""You are an experienced Planner specializing in OpenFOAM projects.

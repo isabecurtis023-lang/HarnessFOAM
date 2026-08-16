@@ -11,7 +11,9 @@ class VisualizationScriptResult(BaseModel):
     pyvista_script: str = Field(description="The complete python script using pyvista to render the flow field and save as .png. Empty if not required.")
 
 def build_visualizer_agent(llm_kwargs: dict = None):
-    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
+    kwargs = (llm_kwargs or {}).copy()
+    if 'temperature' not in kwargs: kwargs['temperature'] = 0.1
+    llm = build_llm(**kwargs)
     
     prompt = PromptTemplate(
         template="""You are an expert in scientific data visualization using PyVista.
