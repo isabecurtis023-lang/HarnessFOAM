@@ -14,9 +14,10 @@ async def run():
     async for output in workflow.astream(initial_state):
         for node_name, state in output.items():
             print(f"Finished node: {node_name}")
-            if node_name == "input_writer":
-                # We stop after input_writer so we don't trigger Runner which takes time
-                print("Files generated successfully in TEST directory. Exiting.")
+            if node_name == "reviewer":
+                print(f"Reviewer suggestions: {state['logs'].get('review_suggestions')}")
+            if node_name == "end":
+                print("Workflow reached END node.")
                 return
 
 asyncio.run(run())

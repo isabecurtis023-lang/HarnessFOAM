@@ -38,7 +38,16 @@ def write_simulation_inputs(
         # Check if there's a specific fix instruction for this file
         specific_suggestion = ""
         for sugg in review_suggestions:
-            if sugg.get("file") == file_name:
+            sugg_file = sugg.get("file", "")
+            sugg_folder = sugg.get("folder", "")
+            
+            # Clean up OpenFOAM specific sub-dictionary notation (e.g., 0/U.boundaryField -> 0/U)
+            if ".boundaryField" in sugg_file: sugg_file = sugg_file.replace(".boundaryField", "")
+            if ".internalField" in sugg_file: sugg_file = sugg_file.replace(".internalField", "")
+            
+            # Match if the file name matches exactly, OR if the file name in suggestion includes the folder (e.g. "0/U")
+            # OR if it's just "U" and the plan is checking "U"
+            if (sugg_file == file_name) or (sugg_file == f"{folder_name}/{file_name}") or (sugg_file == file_name and sugg_folder == folder_name) or (sugg_file.endswith(f"/{file_name}")):
                 specific_suggestion = sugg.get("fix", "")
                 break
                 
