@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="assets/harnessfoam-logo.svg" alt="HarnessFOAM logo" width="320">
+<img src="assets/harnessfoam-horse.png" alt="HarnessFOAM running horse logo" width="320">
 
 **An End-to-End Composable Multi-Agent Framework for Autonomous CFD Simulations in OpenFOAM.**
 <br>

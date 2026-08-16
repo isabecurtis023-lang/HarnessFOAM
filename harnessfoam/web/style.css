@@ -248,7 +248,7 @@ textarea:focus, input:focus {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
-.brand-logo { width: 160px; height: auto; display: block; margin-bottom: 0.55rem; border-radius: 8px; }
+.brand-logo { width: 180px; height: 88px; object-fit: contain; display: block; margin-bottom: 0.55rem; border-radius: 8px; }
 
 .optimization-card {
     margin: 0.75rem;
