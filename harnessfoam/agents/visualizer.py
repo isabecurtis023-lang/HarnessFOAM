@@ -25,6 +25,9 @@ CRITICAL PYVISTA INSTRUCTION:
 Do NOT use `pv.OpenFOAMReader(".")` or pass a directory name to the reader, as this causes an AttributeError in older VTK versions.
 Instead, you MUST create an empty file named `case.foam` in the current directory and pass it to the reader using `pv.OpenFOAMReader("case.foam")`.
 Furthermore, you MUST use `off_screen=True` in the plotter to prevent the script from hanging in a headless environment.
+CRITICAL OPENFOAM MULTIBLOCK INSTRUCTION:
+The `reader.read()` method returns a `pyvista.MultiBlock` dataset. OpenFOAM fields like 'U' or 'p' are NOT block names, they are array scalars inside the blocks (typically inside the `internalMesh` block).
+Do NOT attempt to extract arrays via `mesh['U']`. Instead, pass the multiblock mesh directly to the plotter and specify the scalar name: `plotter.add_mesh(mesh, scalars='U')`.
 For example:
 ```python
 import pyvista as pv
@@ -33,7 +36,7 @@ reader = pv.OpenFOAMReader("case.foam")
 reader.set_active_time_value(reader.time_values[-1])
 mesh = reader.read()
 plotter = pv.Plotter(off_screen=True)
-plotter.add_mesh(mesh)
+plotter.add_mesh(mesh, scalars='U')
 plotter.screenshot('visualization.png')
 plotter.close()
 ```
