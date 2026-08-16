@@ -1043,9 +1043,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     connectionStatus.textContent = "Connected";
                     
                     const postPrompt = document.getElementById("post_prompt") ? document.getElementById("post_prompt").value.trim() : "";
-                    const apiBase = document.getElementById("api-base") ? document.getElementById("api-base").value.trim() : "";
-                    const model = document.getElementById("model-selection") ? document.getElementById("model-selection").value.trim() : "";
-                    const apiKey = document.getElementById("api-key") ? document.getElementById("api-key").value.trim() : "";
+                    const apiBase = document.getElementById("api_base") ? document.getElementById("api_base").value.trim() : "";
+                    const model = document.getElementById("model_name") ? document.getElementById("model_name").value.trim() : "";
+                    const apiKey = document.getElementById("api_key") ? document.getElementById("api_key").value.trim() : "";
 
                     ws.send(JSON.stringify({ 
                         action: "postprocess", 
