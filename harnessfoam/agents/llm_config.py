@@ -108,15 +108,22 @@ def create_structured_chain(llm, prompt, pydantic_schema):
     schema_json = json.dumps(pydantic_schema.model_json_schema())
     schema_json_escaped = schema_json.replace("{", "{{").replace("}", "}}")
     
-    format_instructions = (
-        "\n\n====================\n"
-        "OUTPUT FORMAT INSTRUCTIONS:\n"
-        "You must output ONLY a valid JSON object containing your actual generated data. \n"
-        "CRITICAL: DO NOT output the schema itself! I am providing the schema below so you know what fields are required, but you must return a JSON instance with ACTUAL VALUES populated for this specific case.\n"
-        "JSON Schema to follow:\n"
-        f"{schema_json_escaped}\n\n"
-        "Remember: Output ONLY the raw JSON data object. No markdown, no explanations."
-    )
+    format_instructions = f"""
+
+====================
+OUTPUT FORMAT INSTRUCTIONS:
+You must output ONLY a valid JSON object containing your actual generated data. 
+CRITICAL: DO NOT output the schema itself! I am providing the schema below so you know what fields are required, but you must return a JSON instance with ACTUAL VALUES populated for this specific case.
+JSON Schema to follow:
+{schema_json_escaped}
+
+Example Output:
+{{{{
+  "is_visualization_required": true,
+  "pyvista_script": "import pyvista as pv\\n..."
+}}}}
+
+Remember: Output ONLY the raw JSON data object. No markdown, no explanations."""
     
     # Append instructions to prompt
     from langchain_core.prompts import PromptTemplate
