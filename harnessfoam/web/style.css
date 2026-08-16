@@ -223,12 +223,13 @@ textarea:focus, input:focus {
     align-items: center;
     justify-content: flex-start;
     gap: 0.65rem;
-    color: var(--text-muted);
-    background: transparent;
-    border: 1px solid transparent;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 8px;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
     transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
@@ -242,7 +243,7 @@ textarea:focus, input:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
-.settings-icon { font-size: 1.15rem; line-height: 1; }
+.settings-icon { color: #93c5fd; font-size: 1.3rem; line-height: 1; }
 
 /* File Explorer */
 .file-explorer {
