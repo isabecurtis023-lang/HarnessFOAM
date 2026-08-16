@@ -29,7 +29,7 @@ For each subtask, identify the file name of the OpenFOAM input file (foamfile) a
 
 CRITICAL RULES:
 1. You MUST include files in the '0' directory (e.g., U, p).
-2. You MUST include files in the 'constant' directory (e.g., transportProperties, turbulenceProperties).
+2. You MUST include files in the 'constant' directory. For OpenFOAM 13 incompressible cases use physicalProperties (legacy releases may use transportProperties); add turbulenceProperties only when the selected solver requires it.
 3. You MUST include files in the 'system' directory (e.g., controlDict, fvSchemes, fvSolution, blockMeshDict).
 
 User Requirement: {user_requirement}
@@ -58,7 +58,7 @@ def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
             {"file": "controlDict", "folder": "system"},
             {"file": "fvSchemes", "folder": "system"},
             {"file": "fvSolution", "folder": "system"},
-            {"file": "transportProperties", "folder": "constant"},
+            {"file": "physicalProperties", "folder": "constant"},
             {"file": "turbulenceProperties", "folder": "constant"},
             {"file": "p", "folder": "0"},
             {"file": "U", "folder": "0"}

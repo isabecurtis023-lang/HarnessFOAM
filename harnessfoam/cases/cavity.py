@@ -41,8 +41,9 @@ wallDist { method meshWave; }
         "system/fvSolution": h("dictionary", "fvSolution") + """solvers { p { solver PCG; preconditioner DIC; tolerance 1e-06; relTol 0; } pFinal { $p; relTol 0; } U { solver PBiCG; preconditioner DILU; tolerance 1e-05; relTol 0; } UFinal { $U; relTol 0; } }
 PISO { nCorrectors 2; nNonOrthogonalCorrectors 0; pRefCell 0; pRefValue 0; }
 """,
-        "constant/transportProperties": h("dictionary", "transportProperties") + """transportModel Newtonian;
-nu [0 2 -1 0 0 0 0] 0.01;
+        # OpenFOAM 13 uses physicalProperties for icoFoam transport data.
+        "constant/physicalProperties": h("dictionary", "physicalProperties") + """viscosityModel constant;
+nu 0.01 [m^2/s];
 """,
         "0/p": h("volScalarField", "p") + """dimensions [0 2 -2 0 0 0 0];
 internalField uniform 0;

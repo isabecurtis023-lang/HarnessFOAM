@@ -372,7 +372,7 @@ def system_status():
     # Check 2: WSL
     if shutil.which("wsl"):
         try:
-            res = subprocess.run(["wsl", "bash", "-c", "command -v blockMesh"], capture_output=True, text=True, timeout=15)
+            res = subprocess.run(["wsl", "bash", "-lc", ". /opt/openfoam13/etc/bashrc >/dev/null 2>&1 && command -v blockMesh"], capture_output=True, text=True, timeout=15)
             if res.returncode == 0 and res.stdout.strip():
                 status["openfoam"] = True
                 status["method"] = "WSL"
@@ -617,11 +617,13 @@ set -e
 
 # Source OpenFOAM environment in WSL/Linux if not already set
 if [ -z "$WM_PROJECT_DIR" ]; then
-    if [ -f /usr/share/openfoam/etc/bashrc ]; then
-        . /usr/share/openfoam/etc/bashrc
-    elif [ -f /opt/openfoam*/etc/bashrc ]; then
-        . /opt/openfoam*/etc/bashrc
-    fi
+                if [ -f /opt/openfoam13/etc/bashrc ]; then
+                    . /opt/openfoam13/etc/bashrc
+                else
+                    for foamrc in /opt/openfoam*/etc/bashrc; do
+                        if [ -f "$foamrc" ]; then . "$foamrc"; break; fi
+                    done
+                fi
 fi
 
 # Run mesh generation

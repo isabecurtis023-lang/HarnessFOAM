@@ -222,7 +222,7 @@ Open your browser and navigate to `http://127.0.0.1:8000`.
 
 ### Official tutorial knowledge base
 
-HarnessFOAM now vendors a curated official OpenFOAM tutorial corpus under `assets/openfoam_tutorials/OpenFOAM-13`. The Architect and Input Writer agents retrieve real tutorial dictionary excerpts (including cavity, pitzDaily, motorBike, damBreak, hotRoom and shockTube) as local RAG context when generating configuration files. The index is offline, deterministic and exposed at `/api/knowledge_status` and through the MCP `get_knowledge_status` tool. The corpus version is OpenFOAM 13; compatibility with the installed OpenFOAM release is still verified by preflight, `checkMesh` and the solver run.
+HarnessFOAM now vendors a curated official OpenFOAM tutorial corpus under `assets/openfoam_tutorials/OpenFOAM-13`. The Architect and Input Writer agents retrieve real tutorial dictionary excerpts (including cavity, pitzDaily, motorBike, damBreak, hotRoom and shockTube) as local RAG context when generating configuration files. The index is offline, deterministic and exposed at `/api/knowledge_status` and through the MCP `get_knowledge_status` tool. The WSL runtime is standardized on OpenFOAM 13; compatibility is still verified by preflight, `checkMesh` and the solver run.
 
 To ensure physics-informed reliability, HarnessFOAM is continuously evaluated against a robust suite of classical CFD verification scenarios. Our automated integration test pipeline (`pytest tests/`) validates LLM-generated dictionary accuracy, mesh topology, and solver residuals across diverse flow regimes:
 

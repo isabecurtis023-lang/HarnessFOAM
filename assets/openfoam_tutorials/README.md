@@ -10,4 +10,4 @@ This directory contains a curated set of official OpenFOAM tutorial cases used a
 
 Source: [OpenFOAM/OpenFOAM-13 tutorials](https://github.com/OpenFOAM/OpenFOAM-13/tree/master/tutorials). The upstream `COPYING` file is included. HarnessFOAM indexes dictionary files such as `controlDict`, `blockMeshDict`, `fvSchemes`, `fvSolution`, boundary fields and `Allrun`; it does not execute tutorial scripts automatically.
 
-The bundled corpus is OpenFOAM 13 while the local verification environment may use another release (for example v1912). Solver names, dictionary syntax and physical models must therefore pass HarnessFOAM preflight and the installed solver's runtime checks.
+The bundled corpus and the WSL verification environment are both OpenFOAM 13. Solver names, dictionary syntax and physical models still pass HarnessFOAM preflight, `checkMesh` and the installed solver's runtime checks.

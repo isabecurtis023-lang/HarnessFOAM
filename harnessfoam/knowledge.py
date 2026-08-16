@@ -43,7 +43,7 @@ def _tutorial_roots() -> List[Path]:
             if path.is_dir():
                 candidates.append(path)
     try:
-        probe = subprocess.run(["wsl", "bash", "-lc", "if [ -n \"$FOAM_TUTORIALS\" ] && [ -d \"$FOAM_TUTORIALS\" ]; then printf %s \"$FOAM_TUTORIALS\"; elif [ -d /usr/share/openfoam/tutorials ]; then printf %s /usr/share/openfoam/tutorials; fi"], capture_output=True, text=True, timeout=5)
+        probe = subprocess.run(["wsl", "bash", "-lc", "if [ -n \"$FOAM_TUTORIALS\" ] && [ -d \"$FOAM_TUTORIALS\" ]; then printf %s \"$FOAM_TUTORIALS\"; elif [ -d /opt/openfoam13/tutorials ]; then printf %s /opt/openfoam13/tutorials; elif [ -d /usr/share/openfoam/tutorials ]; then printf %s /usr/share/openfoam/tutorials; fi"], capture_output=True, text=True, timeout=5)
         if probe.returncode == 0 and probe.stdout.strip():
             path = Path(probe.stdout.strip())
             if path.is_dir():

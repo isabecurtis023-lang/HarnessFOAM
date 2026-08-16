@@ -12,10 +12,12 @@ def _read(path: str) -> str:
 def validate_case_files(case_dir: str, plan: List[Dict[str, str]]) -> Tuple[bool, List[str]]:
     errors: List[str] = []
     paths = [f"{item['folder']}/{item['file']}" for item in plan]
-    required = ["system/controlDict", "system/fvSchemes", "system/fvSolution", "system/blockMeshDict", "constant/transportProperties", "0/U", "0/p"]
+    required = ["system/controlDict", "system/fvSchemes", "system/fvSolution", "system/blockMeshDict", "0/U", "0/p"]
     for path in required:
         if path not in paths and not os.path.exists(os.path.join(case_dir, path)):
             errors.append(f"Missing required OpenFOAM file: {path}")
+    if not (os.path.isfile(os.path.join(case_dir, "constant/physicalProperties")) or os.path.isfile(os.path.join(case_dir, "constant/transportProperties"))):
+        errors.append("Missing required OpenFOAM file: constant/physicalProperties (or legacy constant/transportProperties)")
     for path in paths:
         full_path = os.path.join(case_dir, path)
         if not os.path.isfile(full_path):
