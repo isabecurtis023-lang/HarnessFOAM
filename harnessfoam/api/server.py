@@ -665,14 +665,35 @@ echo "Simulation complete!"
         if data.get("action") == "postprocess":
             # 2026-08-15 – Gemini 3.5 Flash: Implement manual post-processing streaming
             cwd = data.get("output_dir")
+            post_prompt = data.get("post_prompt", "")
+            
+            # Extract advanced API settings
+            api_base = data.get("api_base", "").strip()
+            model    = data.get("model", "").strip()
+            api_key  = data.get("api_key", "").strip()
+            llm_kwargs = {}
+            if api_base: llm_kwargs["base_url"] = api_base
+            if model:    llm_kwargs["model"]    = model
+            if api_key:  llm_kwargs["api_key"]  = api_key
+            llm_kwargs["callbacks"] = [WebSocketStreamingCallbackHandler(websocket, agent_name="Visualizer Agent")]
+
             await websocket.send_json({"type": "info", "message": f"Starting post-processing execution in {cwd}..."})
+            await websocket.send_json({"type": "step", "agent": "Visualizer Agent", "message": "Analyzing prompt and generating PyVista script..."})
+            
+            from harnessfoam.agents.visualizer import generate_visualization_script
+            viz_results = generate_visualization_script(post_prompt or "Visualize the flow field", llm_kwargs=llm_kwargs)
+            pyvista_script = viz_results.get('pyvista_script', '')
             
             import sys
+            import os
             script_path = os.path.join(cwd, "viz_postprocess.py")
-            if not os.path.exists(script_path):
-                await websocket.send_json({"type": "error", "message": "viz_postprocess.py not found in output directory. Make sure you run the simulation first."})
+            if not pyvista_script:
+                await websocket.send_json({"type": "error", "message": "Visualizer Agent failed to generate a script."})
                 await websocket.close()
                 return
+                
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(pyvista_script)
                 
             case_foam_path = os.path.join(cwd, "case.foam")
             if not os.path.exists(case_foam_path):
@@ -692,7 +713,11 @@ echo "Simulation complete!"
             except Exception as e:
                 print(f"Failed to patch reader.update(): {e}")
                 
+            import shutil
             cmd = [sys.executable, "viz_postprocess.py"]
+            if shutil.which("xvfb-run") and os.name == "posix":
+                cmd = ["xvfb-run", "-a"] + cmd
+                
             rc = await run_command_and_stream(
                 cmd,
                 cwd=cwd,
