@@ -71,6 +71,9 @@ def main():
     
     # MCP command
     mcp_parser = subparsers.add_parser("mcp", help="Launch the HarnessFOAM MCP Server (stdio)")
+
+    benchmark_parser = subparsers.add_parser("benchmark", help="Run deterministic OpenFOAM 13 benchmark regressions")
+    benchmark_parser.add_argument("--tutorial", choices=["cavity", "pitzDaily", "damBreak", "shockTube", "all"], default="all")
     
     args = parser.parse_args()
     
@@ -80,6 +83,11 @@ def main():
     elif args.command == "mcp":
         from harnessfoam.api.mcp_server import start_mcp
         start_mcp()
+    elif args.command == "benchmark":
+        import json
+        from harnessfoam.tutorial_regression import run_tutorial_regression, list_tutorial_regressions
+        names = list(list_tutorial_regressions()) if args.tutorial == "all" else [args.tutorial]
+        print(json.dumps({name: run_tutorial_regression(name) for name in names}, ensure_ascii=False, indent=2))
     elif args.command == "run" or args.command is None:
         # Fallback for old positional usage or explicit run command
         prompt = getattr(args, "prompt", "Default simulation prompt")

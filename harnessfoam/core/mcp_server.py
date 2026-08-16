@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List, Any
 import subprocess
+import shutil
 from pydantic import BaseModel, Field
 from mcp.server import Server
 import mcp.types as types
@@ -105,11 +106,45 @@ async def review_and_suggest_fix(case_id: str, logs: dict) -> dict:
 
 @app.call_tool()
 async def apply_fix(case_id: str, modifications: list) -> dict:
-    """Applies suggested modifications to the relevant case files."""
+    """Apply content patches safely, preserving a backup for every file."""
     job = _jobs.get(case_id)
     if not job:
         return {"status": "FAILED", "error": "Unknown case_id"}
-    return {"status": "REQUIRES_WORKFLOW_RETRY", "message": "Use the Reviewer/Input Writer workflow to apply validated modifications.", "modifications": modifications}
+    case_dir = os.path.abspath(job["case_dir"])
+    backup_dir = os.path.join(case_dir, ".harnessfoam", "backups", "mcp_fix")
+    applied = []
+    errors = []
+    for modification in modifications or []:
+        if not isinstance(modification, dict):
+            errors.append("Each modification must be an object")
+            continue
+        relative = modification.get("path")
+        if not relative and modification.get("folder") and modification.get("file"):
+            relative = os.path.join(modification["folder"], modification["file"])
+        content = modification.get("content")
+        if not relative or not isinstance(content, str):
+            errors.append("Each modification requires path and string content")
+            continue
+        target = os.path.abspath(os.path.join(case_dir, str(relative)))
+        try:
+            if os.path.commonpath([case_dir, target]) != case_dir:
+                raise ValueError("path escapes the case directory")
+        except ValueError as exc:
+            errors.append(f"Rejected {relative}: {exc}")
+            continue
+        if os.path.isfile(target):
+            backup_target = os.path.join(backup_dir, os.path.relpath(target, case_dir))
+            os.makedirs(os.path.dirname(backup_target), exist_ok=True)
+            shutil.copy2(target, backup_target)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "w", encoding="utf-8", newline="") as handle:
+            handle.write(content)
+        applied.append(os.path.relpath(target, case_dir).replace("\\", "/"))
+    if errors:
+        return {"status": "FAILED", "applied": applied, "errors": errors}
+    job["status"] = "FIX_APPLIED"
+    job["logs"] = {**job.get("logs", {}), "mcp_fix_backup": backup_dir, "mcp_fix_files": applied}
+    return {"status": "REQUIRES_WORKFLOW_RETRY", "applied": applied, "backup_dir": backup_dir, "message": "Fix applied; run the case again to re-run preflight and solver validation."}
 
 @app.call_tool()
 async def generate_visualization(case_id: str, quantity: str, user_prompt: str) -> dict:

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
+  <title id="title">HarnessFOAM</title><desc id="desc">A stylized CFD mesh and flow logo</desc>
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#60a5fa"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>
+  <rect width="320" height="96" rx="22" fill="#111827"/>
+  <g fill="none" stroke="url(#g)" stroke-width="4" stroke-linecap="round">
+    <path d="M22 26h54M22 48h54M22 70h54M32 18v60M54 18v60M76 18v60" opacity=".55"/>
+    <path d="M15 58c15-25 28 25 43 0s28 25 43 0"/>
+  </g>
+  <text x="114" y="57" fill="#e2e8f0" font-family="Inter,Arial,sans-serif" font-size="29" font-weight="700">Harness<tspan fill="#93c5fd">FOAM</tspan></text>
+  <text x="116" y="77" fill="#94a3b8" font-family="monospace" font-size="9" letter-spacing="2">AI · CFD · OPENFOAM 13</text>
+</svg>

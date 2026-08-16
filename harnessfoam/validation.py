@@ -92,7 +92,7 @@ def parse_runtime_metrics(log: str) -> Dict[str, object]:
     }
 
 
-def validate_runtime(log: str) -> Tuple[bool, Dict[str, object], List[str]]:
+def validate_runtime(log: str, expected_version: str = "", max_courant: float = 1.0) -> Tuple[bool, Dict[str, object], List[str]]:
     metrics = parse_runtime_metrics(log)
     errors: List[str] = []
     if re.search(r"FOAM FATAL|FOAM FATAL IO ERROR|FOAM aborting", log or "", re.I):
@@ -101,6 +101,8 @@ def validate_runtime(log: str) -> Tuple[bool, Dict[str, object], List[str]]:
         errors.append("Solver log has no completion marker")
     if metrics["time_steps"] == 0:
         errors.append("Solver log contains no time steps")
-    if metrics["max_courant"] is not None and metrics["max_courant"] > 1.0:
-        errors.append(f"Maximum Courant number is too high: {metrics['max_courant']}")
+    if expected_version and not re.search(r"\bVersion:\s*" + re.escape(expected_version) + r"\b", log or ""):
+        errors.append(f"OpenFOAM runtime version {expected_version} was not confirmed in solver log")
+    if metrics["max_courant"] is not None and metrics["max_courant"] > max_courant:
+        errors.append(f"Maximum Courant number is too high: {metrics['max_courant']} (limit {max_courant})")
     return not errors, metrics, errors
