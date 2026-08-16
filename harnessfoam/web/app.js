@@ -202,13 +202,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedApiBase = localStorage.getItem("harnessfoam_api_base");
     const savedApiKey = localStorage.getItem("harnessfoam_api_key");
     const savedModelName = localStorage.getItem("harnessfoam_model_name");
+    const savedMaxLoops = localStorage.getItem("harnessfoam_max_loops");
 
     const apiBaseInput = document.getElementById("api_base");
     const apiKeyInput = document.getElementById("api_key");
     const modelNameSelect = document.getElementById("model_name");
+    const maxLoopsInput = document.getElementById("max_loops");
 
     if (apiBaseInput && savedApiBase) apiBaseInput.value = savedApiBase;
     if (apiKeyInput && savedApiKey) apiKeyInput.value = savedApiKey;
+    if (maxLoopsInput && savedMaxLoops) maxLoopsInput.value = savedMaxLoops;
     if (modelNameSelect && savedModelName) {
         let optionExists = Array.from(modelNameSelect.options).some(opt => opt.value === savedModelName);
         if (!optionExists) {
@@ -776,10 +779,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 const apiBase = document.getElementById("api_base") ? document.getElementById("api_base").value.trim() : "";
                 const apiKey = document.getElementById("api_key") ? document.getElementById("api_key").value.trim() : "";
                 const modelName = document.getElementById("model_name") ? document.getElementById("model_name").value.trim() : "";
+                const maxLoops = document.getElementById("max_loops") ? document.getElementById("max_loops").value.trim() : "3";
                 
                 localStorage.setItem("harnessfoam_api_base", apiBase);
                 localStorage.setItem("harnessfoam_api_key", apiKey);
                 localStorage.setItem("harnessfoam_model_name", modelName);
+                localStorage.setItem("harnessfoam_max_loops", maxLoops);
 
                 modal.classList.remove("show");
                 if (typeof checkLLMStatus === "function") {
@@ -825,6 +830,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const apiBase = document.getElementById("api_base").value.trim();
         const modelName = document.getElementById("model_name").value.trim();
         const apiKey = document.getElementById("api_key").value.trim();
+        const maxLoops = document.getElementById("max_loops") ? parseInt(document.getElementById("max_loops").value.trim()) || 3 : 3;
         
         ws.onopen = () => {
             connectionDot.classList.add("connected");
@@ -836,7 +842,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 output_dir: outputDir,
                 api_base: apiBase,
                 model: modelName,
-                api_key: apiKey
+                api_key: apiKey,
+                max_loops: maxLoops
             }));
         };
         

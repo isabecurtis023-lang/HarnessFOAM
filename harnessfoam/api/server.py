@@ -733,6 +733,7 @@ echo "Simulation complete!"
         model    = data.get("model", "").strip()
         api_key  = data.get("api_key", "").strip()
         post_prompt = data.get("post_prompt", "")
+        max_loops = int(data.get("max_loops", 3))
         
         # Build runtime llm_kwargs – these take priority over .env / os.environ
         llm_kwargs: dict = {}
@@ -742,14 +743,14 @@ echo "Simulation complete!"
         llm_kwargs["callbacks"] = [WebSocketStreamingCallbackHandler(websocket, agent_name="Agent")]
         
         await websocket.send_json({"type": "info", "message": f"Initializing workflow for: {prompt}"})
-        await websocket.send_json({"type": "step", "agent": "Architect Agent", "message": "Planning file structure and dependencies..."})
         
         workflow = create_workflow()
         initial_state = SimulationState(
             user_requirement=prompt,
             post_prompt=post_prompt,
             case_dir=output_dir,
-            llm_kwargs=llm_kwargs
+            llm_kwargs=llm_kwargs,
+            max_errors=max_loops
         )
         
         # Execute the actual graph with real-time streaming!

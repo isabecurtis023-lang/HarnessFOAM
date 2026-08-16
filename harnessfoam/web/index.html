@@ -111,6 +111,10 @@
                         </div>
                         <div id="model-fetch-status" style="font-size: 0.75rem; color: #10b981; margin-top: 0.25rem;"></div>
                     </div>
+                    <div class="input-group">
+                        <label for="max_loops">Max Agent Loops (Error Retries)</label>
+                        <input type="number" id="max_loops" placeholder="e.g. 3" value="3" min="1" max="10">
+                    </div>
                     <button id="save-settings-btn" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Settings</button>
                 </div>
             </div>
@@ -194,6 +198,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=15"></script>
+    <script src="/static/app.js?v=16"></script>
 </body>
 </html>
