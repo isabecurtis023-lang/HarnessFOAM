@@ -230,6 +230,7 @@ echo "Simulation complete!"
             state['logs']['run_stderr'] = ""
             if process.returncode != 0:
                 state['status'] = 'FAILED'
+                state['logs']['execution_error'] = state['logs']['run_stdout'][-2000:] # Pass the tail of the log to reviewer
                 print(f"Runner Agent failed with code {process.returncode}")
             else:
                 state['status'] = 'SUCCESS'
