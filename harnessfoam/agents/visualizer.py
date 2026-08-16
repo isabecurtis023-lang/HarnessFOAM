@@ -63,12 +63,8 @@ def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None) -> 
         }
     except Exception as e:
         print(f"Visualizer Agent failed: {e}")
-        # Fallback mechanism
-        return {
-            "is_visualization_required": False,
-            "pyvista_script": ""
-        }
-
+        # Return the error in the script field so server.py can display it if it's a parsing error
+        raise Exception(f"Failed to generate visualization script: {e}")
 import subprocess
 import base64
 
