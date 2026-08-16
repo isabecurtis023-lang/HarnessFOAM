@@ -85,7 +85,8 @@ def meshing_node(state: SimulationState) -> SimulationState:
     llm_kwargs = state.get('llm_kwargs') or {}
     case_dir = state.get('case_dir', '')
     suggestions = state.get('logs', {}).get('review_suggestions', [])
-    mesh_results = generate_mesh_script(state['prompt'], case_dir=case_dir, llm_kwargs=llm_kwargs, review_suggestions=suggestions)
+    mesh_results = generate_mesh_script(state['prompt'], case_dir=case_dir, llm_kwargs=llm_kwargs, review_suggestions=suggestions,
+                                        memory_context=prompt_context(case_dir, 'meshing', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
     state['logs']['is_gmsh_required'] = mesh_results['is_gmsh_required']
     state['logs']['mesh_script'] = mesh_results['python_script']
     
@@ -170,7 +171,8 @@ def runner_node(state: SimulationState) -> SimulationState:
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
     llm_kwargs = state.get('llm_kwargs') or {}
-    slurm_script = generate_hpc_script(state['prompt'], llm_kwargs=llm_kwargs)
+    slurm_script = generate_hpc_script(state['prompt'], llm_kwargs=llm_kwargs,
+                                       memory_context=prompt_context(state.get('case_dir'), 'runner', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
     state['logs']['slurm_script'] = slurm_script
     
     # 2026-08-15 – Gemini 3.5 Flash: Avoid recursive execution loop on local run
@@ -384,7 +386,8 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     )
     
     llm_kwargs = state.get('llm_kwargs') or {}
-    viz_results = generate_visualization_script(viz_prompt, llm_kwargs=llm_kwargs)
+    viz_results = generate_visualization_script(viz_prompt, llm_kwargs=llm_kwargs,
+                                                memory_context=prompt_context(state.get('case_dir'), 'visualizer', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
     state['logs']['is_visualization_required'] = viz_results['is_visualization_required']
     state['logs']['pyvista_script'] = viz_results['pyvista_script']
     

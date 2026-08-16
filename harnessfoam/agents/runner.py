@@ -28,7 +28,7 @@ Output ONLY the script content. Ensure that the script is fully functional and m
     chain = create_structured_chain(llm, prompt, SlurmScriptResult)
     return chain
 
-def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None) -> str:
+def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None, memory_context: str = "") -> str:
     """Execute the runner agent to generate a slurm script if HPC is requested."""
     # 2026-08-15 – Gemini 3.5 Flash: return a placeholder, handled locally by the graph or server
     if "hpc" not in prompt_text.lower() and "slurm" not in prompt_text.lower() and "cluster" not in prompt_text.lower():
@@ -36,7 +36,7 @@ def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None) -> str:
         
     try:
         chain = build_runner_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"user_requirement": prompt_text})
+        result = chain.invoke({"user_requirement": prompt_text + memory_context})
         return result.script_content
     except Exception as e:
         print(f"Runner Agent failed: {e}")

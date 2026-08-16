@@ -37,7 +37,7 @@ Output ONLY the structured JSON. Do not provide explanations.
     chain = create_structured_chain(llm, prompt, MeshingScriptResult)
     return chain
 
-def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict = None, review_suggestions: list = None) -> dict:
+def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict = None, review_suggestions: list = None, memory_context: str = "") -> dict:
     """Execute the meshing agent to determine meshing strategy and generate scripts."""
     review_suggestions = review_suggestions or []
     
@@ -79,6 +79,7 @@ def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict 
     try:
         chain = build_meshing_agent(llm_kwargs=llm_kwargs)
         review_context = f"\nReview feedback to incorporate: {specific_suggestion}" if specific_suggestion else ""
+        review_context += memory_context
         result = chain.invoke({"user_requirement": prompt_text, "review_context": review_context})
         return {
             "is_gmsh_required": result.is_gmsh_required,

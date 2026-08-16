@@ -53,11 +53,11 @@ Output ONLY the structured JSON. Do not provide explanations.
     chain = create_structured_chain(llm, prompt, VisualizationScriptResult)
     return chain
 
-def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None) -> dict:
+def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None, memory_context: str = "") -> dict:
     """Execute the visualization agent to determine rendering needs and generate scripts."""
     try:
         chain = build_visualizer_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"user_requirement": prompt_text})
+        result = chain.invoke({"user_requirement": prompt_text + memory_context})
         return {
             "is_gmsh_required": result.is_visualization_required, # Note: using is_gmsh_required in parent graph returned dict for backward compat
             "is_visualization_required": result.is_visualization_required,
