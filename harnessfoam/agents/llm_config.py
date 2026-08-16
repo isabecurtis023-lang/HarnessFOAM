@@ -109,10 +109,13 @@ def create_structured_chain(llm, prompt, pydantic_schema):
     schema_json_escaped = schema_json.replace("{", "{{").replace("}", "}}")
     
     format_instructions = (
-        "\n\nIMPORTANT: You must respond ONLY with a valid JSON instance that strictly conforms to the following JSON schema. "
-        "Do not output the schema itself. Do not include any explanation, markdown formatting, or <think> tags. "
-        "Just the generated JSON instance data:\n"
-        f"{schema_json_escaped}"
+        "\n\n====================\n"
+        "OUTPUT FORMAT INSTRUCTIONS:\n"
+        "You must output ONLY a valid JSON object containing your actual generated data. \n"
+        "CRITICAL: DO NOT output the schema itself! I am providing the schema below so you know what fields are required, but you must return a JSON instance with ACTUAL VALUES populated for this specific case.\n"
+        "JSON Schema to follow:\n"
+        f"{schema_json_escaped}\n\n"
+        "Remember: Output ONLY the raw JSON data object. No markdown, no explanations."
     )
     
     # Append instructions to prompt
