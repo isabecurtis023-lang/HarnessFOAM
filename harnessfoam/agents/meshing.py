@@ -29,16 +29,25 @@ User requirement: {user_requirement}
 
 Output ONLY the structured JSON. Do not provide explanations.
 """,
-        input_variables=["user_requirement"]
+        input_variables=["user_requirement", "review_context"]
     )
     
     chain = create_structured_chain(llm, prompt, MeshingScriptResult)
     return chain
 
-def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict = None) -> dict:
+def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict = None, review_suggestions: list = None) -> dict:
     """Execute the meshing agent to determine meshing strategy and generate scripts."""
+    review_suggestions = review_suggestions or []
+    
+    # Check if there's a specific fix instruction for mesh.py
+    specific_suggestion = ""
+    for sugg in review_suggestions:
+        if sugg.get("file") == "mesh.py":
+            specific_suggestion = sugg.get("fix", "")
+            break
+            
     # Check if a valid mesh.py already exists
-    if case_dir:
+    if not specific_suggestion and case_dir:
         import os
         mesh_script_path = os.path.join(case_dir, "mesh.py")
         if os.path.exists(mesh_script_path):
@@ -67,7 +76,8 @@ def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict 
 
     try:
         chain = build_meshing_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"user_requirement": prompt_text})
+        review_context = f"\nReview feedback to incorporate: {specific_suggestion}" if specific_suggestion else ""
+        result = chain.invoke({"user_requirement": prompt_text, "review_context": review_context})
         return {
             "is_gmsh_required": result.is_gmsh_required,
             "python_script": result.python_script

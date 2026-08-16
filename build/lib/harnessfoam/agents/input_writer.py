@@ -13,9 +13,7 @@ load_dotenv()
 def write_simulation_inputs(
     plan: List[Dict[str, str]],
     prompt_text: str,
-    case_dir: str = "",
-    llm_kwargs: dict = None,
-    review_suggestions: List[Dict[str, str]] = None
+    llm_kwargs: dict = None
 ) -> Dict[str, str]:
     """
     Execute the input writer agent to generate file contents.
@@ -24,40 +22,11 @@ def write_simulation_inputs(
     llm_kwargs = llm_kwargs or {}
     llm = build_llm(**llm_kwargs)
     generated_files: Dict[str, str] = {}
-    review_suggestions = review_suggestions or []
 
     for item in plan:
         file_name   = item['file']
         folder_name = item['folder']
         path        = f"{folder_name}/{file_name}"
-        
-        full_path = ""
-        if case_dir:
-            full_path = os.path.join(case_dir, path.lstrip("/\\"))
-            
-        # Check if there's a specific fix instruction for this file
-        specific_suggestion = ""
-        for sugg in review_suggestions:
-            if sugg.get("file") == file_name:
-                specific_suggestion = sugg.get("fix", "")
-                break
-                
-        # Check if file already exists and is valid
-        skip_generation = False
-        if not specific_suggestion and full_path and os.path.exists(full_path):
-            try:
-                with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
-                    existing_content = f.read()
-                # Simple heuristic to determine if it's a valid OpenFOAM file
-                if "FoamFile" in existing_content and "Mock OpenFOAM content" not in existing_content:
-                    print(f"Input Writer: SKIP {path} (already exists and valid)", flush=True)
-                    generated_files[path] = existing_content
-                    skip_generation = True
-            except Exception as e:
-                print(f"Input Writer: Failed to read existing {path}: {e}")
-
-        if skip_generation:
-            continue
 
         # Build context from previously generated files (keep short to avoid token bloat)
         context_parts = []
@@ -65,12 +34,9 @@ def write_simulation_inputs(
             context_parts.append(f"--- {k} ---\n{v[:500]}\n")
         context_str = "\n".join(context_parts) if context_parts else "None yet."
 
-        suggestion_text = f"CRITICAL REVISION INSTRUCTION: The previous version of this file caused an error. You MUST fix it according to this reviewer instruction: {specific_suggestion}\n\n" if specific_suggestion else ""
-
         user_prompt = (
             f"Generate the complete OpenFOAM '{file_name}' file for the '{folder_name}/' directory.\n\n"
             f"Simulation requirement: {prompt_text}\n\n"
-            f"{suggestion_text}"
             f"Previously generated files (for consistency reference):\n{context_str}\n\n"
             f"Output ONLY the raw file content. Start with the FoamFile header. Do not use Markdown formatting or code fences."
         )

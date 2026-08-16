@@ -743,6 +743,8 @@ echo "Simulation complete!"
         llm_kwargs["callbacks"] = [WebSocketStreamingCallbackHandler(websocket, agent_name="Agent")]
         
         await websocket.send_json({"type": "info", "message": f"Initializing workflow for: {prompt}"})
+        await websocket.send_json({"type": "info", "message": "<br>--- Starting Initial Run ---"})
+        await websocket.send_json({"type": "step", "agent": "Architect Agent", "message": "Planning file structure and dependencies..."})
         
         workflow = create_workflow()
         initial_state = SimulationState(
@@ -764,6 +766,10 @@ echo "Simulation complete!"
                     await websocket.send_json({"type": "step", "agent": agent_name, "message": "Simulation failed, routing to Reviewer..."})
                 else:
                     await websocket.send_json({"type": "step", "agent": agent_name, "message": f"Task completed successfully."})
+                
+                if node_name == "reviewer":
+                    loop_idx = state.get("errors", 1)
+                    await websocket.send_json({"type": "info", "message": f"<br>--- Starting Error Recovery Loop {loop_idx} ---"})
                 
                 final_state = state
                 

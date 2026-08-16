@@ -1,0 +1,2 @@
+Notification timestamp: 2026-08-15T19:38:00+08:00
+Notification text: Users are encouraged to check the arXiv API terms of use at https://info.arxiv.org/help/api/index.html and to always verify the specific license of any retrieved papers before use.
