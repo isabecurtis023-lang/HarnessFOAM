@@ -4,16 +4,20 @@ import subprocess
 from pydantic import BaseModel, Field
 from mcp.server import Server
 import mcp.types as types
+from typing import Dict
 
 app = Server("HarnessFOAM-MCP")
+_jobs: Dict[str, dict] = {}
 
 # Tools definitions
 @app.call_tool()
 async def create_case(user_prompt: str) -> dict:
     """Initializes a new CFD simulation case and its workspace."""
-    # In a real system, this creates a unique case_id and sets up workspace
     case_id = "case_" + os.urandom(4).hex()
-    return {"case_id": case_id}
+    case_dir = os.path.abspath(os.path.join("mcp_cases", case_id))
+    os.makedirs(case_dir, exist_ok=True)
+    _jobs[case_id] = {"case_id": case_id, "case_dir": case_dir, "prompt": user_prompt, "status": "CREATED", "logs": {}}
+    return {"case_id": case_id, "case_dir": case_dir, "status": "CREATED"}
 
 from harnessfoam.agents.architect import plan_simulation
 from harnessfoam.agents.input_writer import write_simulation_inputs
@@ -55,18 +59,42 @@ async def generate_hpc_script_tool(case_id: str, hpc_config: dict, user_prompt: 
 
 @app.call_tool()
 async def run_simulation(case_id: str, environment: str) -> dict:
-    """Asynchronously executes the simulation either locally or by submitting to an HPC cluster."""
-    return {"job_id": f"run_{case_id}"}
+    """Executes the local workflow and returns a real job snapshot.
+
+    Remote/HPC submission is intentionally not implemented in this P0 pass;
+    callers receive an explicit status instead of a fabricated SUCCESS.
+    """
+    job_id = f"run_{case_id}"
+    job = _jobs.get(case_id)
+    if not job:
+        return {"job_id": job_id, "status": "FAILED", "error": "Unknown case_id"}
+    if environment.lower() not in ("local", "native", "wsl", "auto"):
+        job.update(status="UNSUPPORTED", error="Remote/HPC execution is not enabled")
+        return {"job_id": job_id, "status": job["status"], "error": job["error"]}
+    workflow = __import__("harnessfoam.agents.graph", fromlist=["create_workflow", "SimulationState"])
+    graph = workflow.create_workflow()
+    state = workflow.SimulationState(user_requirement=job["prompt"], case_dir=job["case_dir"], max_errors=3)
+    try:
+        final_state = await graph.ainvoke(state)
+        job.update(status=final_state.get("status", "UNKNOWN"), logs=final_state.get("logs", {}), state=final_state)
+    except Exception as exc:
+        job.update(status="FAILED", logs={"execution_error": str(exc)})
+    return {"job_id": job_id, "status": job["status"], "case_id": case_id, "metrics": job["logs"].get("runtime_metrics", {})}
 
 @app.call_tool()
 async def check_job_status(job_id: str) -> dict:
     """Checks the status of any asynchronous job (meshing, simulation, visualization)."""
-    return {"status": {"state": "SUCCESS"}}
+    case_id = job_id.removeprefix("run_")
+    job = _jobs.get(case_id)
+    if not job:
+        return {"status": {"state": "UNKNOWN", "error": "Unknown job_id"}}
+    return {"status": {"state": job.get("status", "UNKNOWN"), "case_id": case_id, "metrics": job.get("logs", {}).get("runtime_metrics", {})}}
 
 @app.call_tool()
 async def get_simulation_logs(case_id: str, job_id: str) -> dict:
     """Retrieves detailed logs for a failed job to enable error diagnosis."""
-    return {"logs": {"error": "Courant number exceeded"}}
+    job = _jobs.get(case_id, {})
+    return {"logs": job.get("logs", {})}
 
 @app.call_tool()
 async def review_and_suggest_fix(case_id: str, logs: dict) -> dict:
@@ -78,7 +106,10 @@ async def review_and_suggest_fix(case_id: str, logs: dict) -> dict:
 @app.call_tool()
 async def apply_fix(case_id: str, modifications: list) -> dict:
     """Applies suggested modifications to the relevant case files."""
-    return {"status": "SUCCESS"}
+    job = _jobs.get(case_id)
+    if not job:
+        return {"status": "FAILED", "error": "Unknown case_id"}
+    return {"status": "REQUIRES_WORKFLOW_RETRY", "message": "Use the Reviewer/Input Writer workflow to apply validated modifications.", "modifications": modifications}
 
 @app.call_tool()
 async def generate_visualization(case_id: str, quantity: str, user_prompt: str) -> dict:

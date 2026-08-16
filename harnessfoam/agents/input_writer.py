@@ -7,6 +7,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
+from harnessfoam.knowledge import format_context
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ def write_simulation_inputs(
     llm = build_llm(**llm_kwargs)
     generated_files: Dict[str, str] = {}
     review_suggestions = review_suggestions or []
+    retrieved_context = format_context(prompt_text, k=5)
 
     for item in plan:
         file_name   = item['file']
@@ -81,6 +83,7 @@ def write_simulation_inputs(
             f"Generate the complete OpenFOAM '{file_name}' file for the '{folder_name}/' directory.\n\n"
             f"CRITICAL RULE: If generating 'controlDict', you MUST set 'purgeWrite 1;' to save disk space.\n\n"
             f"Simulation requirement: {prompt_text}\n\n"
+            f"Canonical OpenFOAM guidance retrieved for this case:\n{retrieved_context}\n\n"
             f"{suggestion_text}"
             f"Previously generated files (for consistency reference):\n{context_str}\n\n"
             f"Output ONLY the raw file content. Start with the FoamFile header. Do not use Markdown formatting or code fences."

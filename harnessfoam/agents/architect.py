@@ -5,6 +5,7 @@ from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
+from harnessfoam.knowledge import format_context
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -44,7 +45,8 @@ def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
     """Execute the architect agent to get a structured plan."""
     try:
         chain = build_architect_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"user_requirement": prompt_text})
+        enriched_prompt = f"{prompt_text}\n\nCanonical retrieved OpenFOAM guidance:\n{format_context(prompt_text, k=5)}"
+        result = chain.invoke({"user_requirement": enriched_prompt})
         return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
     except Exception as e:
         print(f"Architect Agent failed (possibly due to API/Key issues): {e}")

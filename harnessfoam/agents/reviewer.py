@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -15,6 +16,26 @@ class FixSuggestion(BaseModel):
 class ReviewResult(BaseModel):
     is_resolved: bool = Field(description="True if there are no errors, False if errors found")
     fixes: List[FixSuggestion] = Field(description="List of files to fix and how to fix them")
+
+
+def deterministic_suggestions(error_logs: str) -> List[dict]:
+    """Map common deterministic validator errors to exact files."""
+    suggestions = []
+    text = error_logs or ""
+    for path in re.findall(r"(?:Missing required OpenFOAM file|Planned file was not written|Missing FoamFile header|Placeholder content is not allowed):\s*([^\s]+)", text):
+        clean = path.replace('\\', '/')
+        if '/' in clean:
+            folder, file_name = clean.rsplit('/', 1)
+            suggestions.append({"file": file_name, "folder": folder, "fix": f"Regenerate the complete file {clean}; preserve all user-declared physical parameters and include a valid FoamFile header."})
+    for field, mesh, generated in re.findall(r"Patch mismatch for 0/(\w+): mesh=\[(.*?)\], field=\[(.*?)\]", text):
+        suggestions.append({"file": field, "folder": "0", "fix": f"Make boundaryField patch names exactly match blockMeshDict. Mesh patches are [{mesh}], but this field has [{generated}]."})
+    if "controlDict has no application" in text:
+        suggestions.append({"file": "controlDict", "folder": "system", "fix": "Add the correct OpenFOAM application entry, for example application icoFoam; consistent with the requested solver."})
+    for solver, path in re.findall(r"(\w+) requires ([\w./]+)", text):
+        if '/' in path:
+            folder, file_name = path.rsplit('/', 1)
+            suggestions.append({"file": file_name, "folder": folder, "fix": f"Generate {path}, which is required by solver {solver}, and keep it consistent with the selected physical model."})
+    return suggestions
 
 def build_reviewer_agent(llm_kwargs: dict = None):
     kwargs = (llm_kwargs or {}).copy()
@@ -50,10 +71,10 @@ def analyze_errors(error_logs: str, llm_kwargs: dict = None) -> dict:
         }
     except Exception as e:
         print(f"Reviewer Agent failed: {e}")
-        # Fallback mechanism
+        deterministic = deterministic_suggestions(error_logs)
         return {
             "is_resolved": False,
-            "suggestions": [{"file": "controlDict", "folder": "system", "fix": "Reduce time step to satisfy Courant number limit."}]
+            "suggestions": deterministic or [{"file": "controlDict", "folder": "system", "fix": "Reduce time step to satisfy Courant number limit."}]
         }
 
 def analyze_visual_anomalies(image_path: str, user_requirement: str) -> dict:

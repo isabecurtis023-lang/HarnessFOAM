@@ -183,6 +183,19 @@ document.addEventListener("DOMContentLoaded", () => {
     
     checkOFStatus();
     checkEnvironmentStatus();
+    const knowledgeDot = document.getElementById("knowledge-dot");
+    const knowledgeStatus = document.getElementById("knowledge-status");
+    fetch('/api/knowledge_status')
+        .then(r => r.json())
+        .then(data => {
+            const count = Number(data.chunks || 0);
+            knowledgeDot.style.backgroundColor = count > 0 ? "#10b981" : "#f59e0b";
+            knowledgeStatus.innerHTML = `Tutorial RAG: <span style="color:${count > 0 ? '#10b981' : '#f59e0b'}">${count} files</span>`;
+        })
+        .catch(() => {
+            knowledgeDot.style.backgroundColor = "#ef4444";
+            knowledgeStatus.innerHTML = 'Tutorial RAG: <span style="color:#ef4444">Unavailable</span>';
+        });
     // 2026-08-15 – Gemini 3.5 Flash: Initial button states update
     updateButtonStates();
 
@@ -954,6 +967,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.files && data.files.length > 0) {
                     const fileList = data.files.map(f => `<div>📄 ${f}</div>`).join("");
                     appendLog(`<div class="file-list">${fileList}</div>`);
+                }
+
+                if (data.preflight_ok !== undefined) {
+                    const color = data.preflight_ok ? "#10b981" : "#ef4444";
+                    appendLog(`<span class="info">Preflight: <strong style="color:${color}">${data.preflight_ok ? "PASSED" : "FAILED"}</strong></span>`);
+                }
+                if (data.runtime_metrics && Object.keys(data.runtime_metrics).length > 0) {
+                    const m = data.runtime_metrics;
+                    appendLog(`<span class="info">Runtime metrics: steps=${m.time_steps ?? "-"}, final time=${m.last_time ?? "-"}, max Co=${m.max_courant ?? "-"}, max continuity=${m.max_abs_continuity_error ?? "-"}</span>`);
+                }
+                if (data.postprocess_status) {
+                    const postColor = data.postprocess_status === "SUCCESS" ? "#10b981" : "#f59e0b";
+                    appendLog(`<span class="info">Post-process: <strong style="color:${postColor}">${data.postprocess_status}</strong></span>`);
                 }
                 
                 if (data.image_base64) {

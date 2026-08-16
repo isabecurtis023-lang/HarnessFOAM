@@ -22,6 +22,7 @@ class SimulationState(TypedDict, total=False):
     llm_kwargs: Optional[Dict[str, Any]]  # Runtime API overrides passed from server
 
 from harnessfoam.agents.architect import plan_simulation
+from harnessfoam.validation import validate_case_files, validate_runtime
 
 def architect_node(state: SimulationState) -> SimulationState:
     # Normalize state for backward compatibility
@@ -96,9 +97,19 @@ def input_writer_node(state: SimulationState) -> SimulationState:
     
     # Write files to disk
     import os
+    import shutil
     case_dir = state.get('case_dir')
     if case_dir:
         os.makedirs(case_dir, exist_ok=True)
+        backup_dir = os.path.join(case_dir, '.harnessfoam', 'backups', f"attempt_{state.get('errors', 0)}")
+        os.makedirs(backup_dir, exist_ok=True)
+        for rel_path in state['logs']['generated_files']:
+            old_path = os.path.join(case_dir, rel_path.lstrip('/\\'))
+            if os.path.isfile(old_path):
+                backup_path = os.path.join(backup_dir, rel_path.lstrip('/\\'))
+                os.makedirs(os.path.dirname(backup_path), exist_ok=True)
+                shutil.copy2(old_path, backup_path)
+        state['logs']['backup_dir'] = backup_dir
         for rel_path, content in state['logs']['generated_files'].items():
             safe_rel_path = rel_path.lstrip("/\\")
             full_path = os.path.join(case_dir, safe_rel_path)
@@ -108,6 +119,18 @@ def input_writer_node(state: SimulationState) -> SimulationState:
                 f.write(content)
                 
     state['file_plan'] = state['plan']
+    return state
+
+def preflight_node(state: SimulationState) -> SimulationState:
+    """Validate generated files before launching any external solver."""
+    state['current_step'] = 'preflight'
+    ok, errors = validate_case_files(state['case_dir'], state.get('plan', []))
+    state['logs']['preflight_ok'] = ok
+    state['logs']['preflight_errors'] = errors
+    if not ok:
+        state['status'] = 'FAILED'
+        state['logs']['execution_error'] = "Preflight validation failed:\n" + "\n".join(errors)
+        print("Preflight validation failed:", errors)
     return state
 
 from harnessfoam.agents.runner import generate_hpc_script, execute_simulation
@@ -167,6 +190,9 @@ else
     echo "Running native blockMesh..."
     blockMesh
 fi
+
+echo "Checking mesh quality..."
+checkMesh
 
 # Run solver
 echo "Running solver {solver_name}..."
@@ -250,10 +276,17 @@ echo "Simulation complete!"
                 state['logs']['execution_error'] = state['logs']['run_stdout'][-2000:] # Pass the tail of the log to reviewer
                 print(f"Runner Agent failed with code {process.returncode}")
             else:
-                state['status'] = 'SUCCESS'
+                runtime_ok, metrics, metric_errors = validate_runtime(state['logs']['run_stdout'])
+                state['logs']['runtime_metrics'] = metrics
+                if runtime_ok:
+                    state['status'] = 'SUCCESS'
+                else:
+                    state['status'] = 'FAILED'
+                    state['logs']['execution_error'] = "Runtime validation failed:\n" + "\n".join(metric_errors)
         except Exception as e:
             state['status'] = 'FAILED'
             state['logs']['run_stderr'] = str(e)
+            state['logs']['execution_error'] = str(e)
             print(f"Runner Agent execution exception: {e}")
             
     else:
@@ -334,6 +367,9 @@ def route_after_review(state: SimulationState) -> str:
         return "meshing"
     return "input_writer"
 
+def route_after_preflight(state: SimulationState) -> str:
+    return "review" if state.get('status') == 'FAILED' else "run"
+
 def create_workflow() -> StateGraph:
     workflow = StateGraph(SimulationState)
     
@@ -341,6 +377,7 @@ def create_workflow() -> StateGraph:
     workflow.add_node("meshing", meshing_node)
     workflow.add_node("input_writer", input_writer_node)
     workflow.add_node("runner", runner_node)
+    workflow.add_node("preflight", preflight_node)
     workflow.add_node("reviewer", reviewer_node)
     workflow.add_node("visualizer", visualizer_node)
     workflow.add_node("end", end_node)
@@ -348,7 +385,12 @@ def create_workflow() -> StateGraph:
     workflow.set_entry_point("architect")
     workflow.add_edge("architect", "meshing")
     workflow.add_edge("meshing", "input_writer")
-    workflow.add_edge("input_writer", "runner")
+    workflow.add_edge("input_writer", "preflight")
+    workflow.add_conditional_edges(
+        "preflight",
+        route_after_preflight,
+        {"review": "reviewer", "run": "runner"}
+    )
     
     workflow.add_conditional_edges(
         "runner",

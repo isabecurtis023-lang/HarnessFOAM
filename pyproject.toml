@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "HarnessFOAM"
 version = "0.1.0"
+requires-python = ">=3.10"
 description = "An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM"
 readme = "README.md"
 authors = [

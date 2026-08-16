@@ -25,6 +25,9 @@ else
     blockMesh
 fi
 
+echo "Checking mesh quality..."
+checkMesh
+
 # Run solver
 echo "Running solver icoFoam..."
 icoFoam

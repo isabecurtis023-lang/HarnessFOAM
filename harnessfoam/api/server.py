@@ -350,6 +350,12 @@ def get_cwd():
     import os
     return {"cwd": os.getcwd().replace("\\", "/")}
 
+@app.get("/api/knowledge_status")
+def knowledge_status():
+    """Expose the local RAG corpus state to the Web UI and diagnostics."""
+    from harnessfoam.knowledge import official_tutorial_stats
+    return official_tutorial_stats()
+
 @app.get("/api/system_status")
 def system_status():
     import subprocess
@@ -629,6 +635,9 @@ else
     blockMesh
 fi
 
+echo "Checking mesh quality..."
+checkMesh
+
 # Run solver
 echo "Running solver {solver_name}..."
 {solver_name}
@@ -826,7 +835,12 @@ echo "Simulation complete!"
                 next_agent = None
                 if node_name == "architect": next_agent = ("Meshing Agent", "Generating blockMesh/snappyHexMesh topology...")
                 elif node_name == "meshing": next_agent = ("Input Writer Agent", "Compiling numerical dictionaries (fvSchemes, fvSolution)...")
-                elif node_name == "input_writer": next_agent = ("Runner Agent", "Executing physics solvers locally...")
+                elif node_name == "input_writer": next_agent = ("Preflight Validator", "Checking dictionary consistency before solver launch...")
+                elif node_name == "preflight":
+                    if state.get("status") == "FAILED":
+                        next_agent = ("Reviewer Agent", "Diagnosing preflight validation failures...")
+                    else:
+                        next_agent = ("Runner Agent", "Executing physics solvers locally...")
                 elif node_name == "runner": 
                     if state.get("status") == "SUCCESS":
                         next_agent = ("Visualizer Agent", "Running PyVista post-processing pipeline...")
@@ -852,6 +866,8 @@ echo "Simulation complete!"
         }
 
         response_payload["postprocess_status"] = final_state.get("logs", {}).get("postprocess_status", "SKIPPED")
+        response_payload["preflight_ok"] = final_state.get("logs", {}).get("preflight_ok")
+        response_payload["runtime_metrics"] = final_state.get("logs", {}).get("runtime_metrics", {})
         
         if final_state.get("image_base64"):
             response_payload["image_base64"] = final_state.get("image_base64")

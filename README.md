@@ -72,17 +72,22 @@ graph TD
     A[User Requirement] --> B[Architect Agent]
     B --> C[Meshing Agent]
     C --> D[Input Writer Agent]
-    D --> E[Runner Agent]
-    E --> F{Success/Failure?}
-    F -- Failure & Attempts < Max --> G[Reviewer Agent]
+    D --> E[Preflight Validator]
+    E --> F{Consistent?}
+    F -- No --> G[Reviewer Agent]
     G --> D
-    F -- Failure & Max Reached --> H[End Node]
-    F -- Success --> I[Visualizer Agent]
-    I --> H
+    F -- Yes --> H[checkMesh + Runner]
+    H --> I{Runtime metrics valid?}
+    I -- No --> G
+    I -- Yes --> J[Visualizer Agent]
+    J --> K[End]
 ```
 
 1. **State Propagation** – A unified `llm_kwargs` dict is sent across all agents, ensuring runtime model overrides (e.g. `gpt-4o`, `claude-3-5-sonnet`, `gemini-2.5-pro`, `deepseek-v4-flash`, `minimax-m27`, `qwen3.5`) are consistently respected.
-2. **Error Feedback Loops** – If a simulation run crashes, the environment logs are routed to the **Reviewer**, which writes suggestions, updates files, and commands the **Input Writer** to recompile config files.
+2. **Retrieval-Augmented Generation** – Architect and Input Writer receive offline canonical OpenFOAM guidance for solver selection, boundary consistency, 2-D meshes, pressure references, mesh quality and runtime checks.
+3. **Deterministic Preflight** – Generated dictionaries are checked for required files, FoamFile headers, placeholder content, solver-specific dependencies and patch-name consistency before any solver starts.
+4. **Runtime Validation** – `checkMesh` runs before the solver. Logs are parsed for residuals, continuity errors, Courant numbers, time-step count and completion markers.
+5. **Bounded Error Feedback** – Validation failures are routed to Reviewer. Target files are identified deterministically when possible, and overwritten files are backed up under `.harnessfoam/backups/`.
 
 ---
 
@@ -117,6 +122,23 @@ Every agent inside HarnessFOAM operates with distinct inputs, toolboxes, and pyd
 ### 6. Visualizer Agent (`visualizer.py`)
 * **Role**: Automated post-processing plotting.
 * **Execution**: Compiles python scripts using `PyVista` to load OpenFOAM VTK results, applies contour filters, renders velocity/pressure fields, saves the output to a `.png` file, and streams it back to the client interface.
+
+## ✅ Validation and runtime outputs
+
+Every local Deep Driving run now reports three separate stages:
+
+```text
+Preflight → checkMesh → Solver → Runtime Metrics → Visualizer
+```
+
+The Web UI and MCP response expose:
+
+* `preflight_ok` and deterministic file/patch errors;
+* `runtime_metrics.time_steps` and `runtime_metrics.last_time`;
+* maximum Courant number and continuity error;
+* `postprocess_status` and the generated visualization image.
+
+The built-in 2-D lid-driven cavity is used as an offline smoke case when the configured LLM is unavailable. Normal operation still calls the LLM from `.env` to generate the case files; the fallback prevents an API outage from producing fake OpenFOAM dictionaries.
 
 ---
 
@@ -157,6 +179,8 @@ To attach the HarnessFOAM agentic backbone to your local IDE or orchestrator, ad
 
 Once connected, your external agent will gain access to the `run_cfd_simulation(prompt, output_dir)` tool, effectively allowing it to dispatch complex CFD orchestration tasks directly to the HarnessFOAM LangGraph pipeline!
 
+The tool now returns the actual workflow status rather than an unconditional success message. It includes generated files, preflight status, runtime metrics, post-processing status and the latest execution error, if any. The lower-level MCP tools also return `UNKNOWN`, `FAILED` or `UNSUPPORTED` for cases/jobs they cannot execute; they do not fabricate successful job states.
+
 ---
 
 ## 🔧 Installation & Quick Start
@@ -195,6 +219,10 @@ Open your browser and navigate to `http://127.0.0.1:8000`.
 ---
 
 ## 🧪 Benchmarks & Validations
+
+### Official tutorial knowledge base
+
+HarnessFOAM now vendors a curated official OpenFOAM tutorial corpus under `assets/openfoam_tutorials/OpenFOAM-13`. The Architect and Input Writer agents retrieve real tutorial dictionary excerpts (including cavity, pitzDaily, motorBike, damBreak, hotRoom and shockTube) as local RAG context when generating configuration files. The index is offline, deterministic and exposed at `/api/knowledge_status` and through the MCP `get_knowledge_status` tool. The corpus version is OpenFOAM 13; compatibility with the installed OpenFOAM release is still verified by preflight, `checkMesh` and the solver run.
 
 To ensure physics-informed reliability, HarnessFOAM is continuously evaluated against a robust suite of classical CFD verification scenarios. Our automated integration test pipeline (`pytest tests/`) validates LLM-generated dictionary accuracy, mesh topology, and solver residuals across diverse flow regimes:
 

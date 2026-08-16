@@ -3,6 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="harnessfoam",
     version="0.1.0",
+    python_requires=">=3.10",
     description="An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM",
     author="Isabel Curtis",
     packages=find_packages(),

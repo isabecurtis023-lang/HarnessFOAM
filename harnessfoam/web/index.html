@@ -66,6 +66,10 @@
                     <span id="llm-status">Checking LLM API...</span>
                 </div>
                 <div class="status-indicator">
+                    <div class="dot" id="knowledge-dot" style="background-color: #fbbf24;"></div>
+                    <span id="knowledge-status">Checking tutorial knowledge...</span>
+                </div>
+                <div class="status-indicator">
                     <div class="dot" id="connection-dot"></div>
                     <span id="connection-status">Agent Connection: Disconnected</span>
                 </div>
@@ -152,6 +156,7 @@
             </div>
             <div class="terminal-body" id="console-output">
                 <div class="log-entry system">Welcome to HarnessFOAM v0.1.0 Web Interface.</div>
+                <div class="log-entry system">Pipeline: LLM/RAG → Preflight → checkMesh → Solver → Metrics → Visualizer.</div>
                 <div class="log-entry system">Ready to process CFD specifications.</div>
             </div>
             
@@ -198,6 +203,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=16"></script>
+    <script src="/static/app.js?v=18"></script>
 </body>
 </html>
