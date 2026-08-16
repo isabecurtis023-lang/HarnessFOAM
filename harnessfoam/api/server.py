@@ -6,41 +6,54 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import uvicorn
 from harnessfoam.agents.graph import create_workflow, SimulationState
-from langchain_core.callbacks import AsyncCallbackHandler
+from langchain_core.callbacks import BaseCallbackHandler
 
-class WebSocketStreamingCallbackHandler(AsyncCallbackHandler):
+class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
     def __init__(self, websocket: WebSocket, agent_name: str = "LLM"):
         self.websocket = websocket
         self.agent_name = agent_name
+        try:
+            self.loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self.loop = asyncio.get_event_loop()
 
-    async def on_chat_model_start(self, serialized: dict, messages: list, **kwargs):
+    def on_chat_model_start(self, serialized: dict, messages: list, **kwargs):
         # Extract prompt from messages
         prompt_text = "\n".join([m.content for m in messages[0]]) if messages and messages[0] else ""
         try:
-            await self.websocket.send_json({
-                "type": "llm_start",
-                "agent": self.agent_name,
-                "prompt": prompt_text
-            })
+            asyncio.run_coroutine_threadsafe(
+                self.websocket.send_json({
+                    "type": "llm_start",
+                    "agent": self.agent_name,
+                    "prompt": prompt_text
+                }),
+                self.loop
+            )
         except Exception:
             pass
 
-    async def on_llm_new_token(self, token: str, **kwargs):
+    def on_llm_new_token(self, token: str, **kwargs):
         try:
-            await self.websocket.send_json({
-                "type": "llm_token",
-                "agent": self.agent_name,
-                "token": token
-            })
+            asyncio.run_coroutine_threadsafe(
+                self.websocket.send_json({
+                    "type": "llm_token",
+                    "agent": self.agent_name,
+                    "token": token
+                }),
+                self.loop
+            )
         except Exception:
             pass
         
-    async def on_llm_end(self, response, **kwargs):
+    def on_llm_end(self, response, **kwargs):
         try:
-            await self.websocket.send_json({
-                "type": "llm_end",
-                "agent": self.agent_name
-            })
+            asyncio.run_coroutine_threadsafe(
+                self.websocket.send_json({
+                    "type": "llm_end",
+                    "agent": self.agent_name
+                }),
+                self.loop
+            )
         except Exception:
             pass
 
