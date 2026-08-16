@@ -60,6 +60,7 @@
             font-size: 3rem;
             filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4));
         }
+        .logo-image { width: 260px; border-radius: 16px; box-shadow: 0 12px 30px rgba(59,130,246,.2); }
 
         h1 {
             font-size: 3.5rem;
@@ -447,7 +448,7 @@
 
     <header>
         <div class="logo-wrap">
-            <span class="logo-emoji">🌊</span>
+            <img class="logo-image" src="assets/harnessfoam-logo.svg" alt="HarnessFOAM logo">
             <h1>HarnessFOAM</h1>
         </div>
         <p class="subtitle">An End‑to‑End Composable Multi‑Agent Framework for Automating CFD Simulation in OpenFOAM. Driven by LangGraph, MCP, and Vision-Language models.</p>
@@ -582,6 +583,15 @@
                 <div class="code-line">Mesh: <span class="command">400 cells / checkMesh OK</span></div>
                 <div class="code-line">Runtime: <span class="command">501 time steps / max Co 0.170424</span></div>
                 <div class="code-line">Post-process: <span class="command">visualization.png generated</span></div>
+            </div>
+        </section>
+
+        <section>
+            <h2>🧠 Memory, Assistant Tools &amp; Benchmarks</h2>
+            <div class="workflow-grid">
+                <div class="workflow-card"><div class="step-num">1</div><h3>Opt-in memory</h3><p>Every agent has a local lesson document with its own token budget. Full documents are compressed automatically; memory is off by default.</p></div>
+                <div class="workflow-card"><div class="step-num">2</div><h3>Safe framework edits</h3><p>The assistant can search and read the repository, then propose a reviewable patch. Writes require explicit confirmation and remain inside the project.</p></div>
+                <div class="workflow-card"><div class="step-num">3</div><h3>OpenFOAM 13 matrix</h3><p>CLI, Web API/UI and MCP paths are checked against cavity, pitzDaily, damBreak and shockTube tutorial regressions.</p></div>
             </div>
         </section>
 
