@@ -783,7 +783,12 @@ echo "Simulation complete!"
                         next_agent = ("Visualizer Agent", "Running PyVista post-processing pipeline...")
                     else:
                         next_agent = ("Reviewer Agent", "Validating dictionary syntax and physical constraints...")
-                elif node_name == "reviewer": next_agent = ("Input Writer Agent", "Re-compiling numerical dictionaries with fixes...")
+                elif node_name == "reviewer": 
+                    suggestions = state.get('logs', {}).get('review_suggestions', [])
+                    if any(s.get('file') == 'mesh.py' for s in suggestions):
+                        next_agent = ("Meshing Agent", "Re-generating mesh script with Reviewer feedback...")
+                    else:
+                        next_agent = ("Input Writer Agent", "Re-compiling numerical dictionaries with fixes...")
                 
                 if next_agent:
                     await websocket.send_json({"type": "step", "agent": next_agent[0], "message": next_agent[1]})
