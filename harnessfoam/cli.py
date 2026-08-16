@@ -64,11 +64,17 @@ def main():
     serve_parser.add_argument("--host", type=str, default="127.0.0.1", help="Host address")
     serve_parser.add_argument("--port", type=int, default=8000, help="Port number")
     
+    # MCP command
+    mcp_parser = subparsers.add_parser("mcp", help="Launch the HarnessFOAM MCP Server (stdio)")
+    
     args = parser.parse_args()
     
     if args.command == "serve":
         from harnessfoam.api.server import start_server
         start_server(host=args.host, port=args.port)
+    elif args.command == "mcp":
+        from harnessfoam.api.mcp_server import start_mcp
+        start_mcp()
     elif args.command == "run" or args.command is None:
         # Fallback for old positional usage or explicit run command
         prompt = getattr(args, "prompt", "Default simulation prompt")
