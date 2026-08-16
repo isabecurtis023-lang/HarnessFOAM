@@ -64,14 +64,17 @@ class DeepSeekRobustParser(BaseOutputParser):
                     in_string = not in_string
                 elif not in_string:
                     if c in '{[':
-                        if depth == 0:
+                        if depth <= 0:
                             start = i
+                            depth = 0
                         depth += 1
                     elif c in '}]':
                         depth -= 1
                         if depth == 0 and start != -1:
                             objects.append(s[start:i+1])
                             start = -1
+                        elif depth < 0:
+                            depth = 0
                 if c == '\\' and not escape:
                     escape = True
                 else:
@@ -127,7 +130,7 @@ JSON Schema to follow:
 Example Output:
 {{{{
   "is_visualization_required": true,
-  "pyvista_script": "import pyvista as pv\\n..."
+  "pyvista_script": "import pyvista as pv\\nwith open('case.foam', 'w') as f: pass\\nreader = pv.OpenFOAMReader('case.foam')\\nreader.set_active_time_value(reader.time_values[-1])\\nmesh = reader.read()\\nplotter = pv.Plotter(off_screen=True)\\nplotter.add_mesh(mesh, scalars='U')\\nplotter.view_isometric()\\nplotter.screenshot('visualization.png')\\nplotter.close()"
 }}}}
 
 Remember: Output ONLY the raw JSON data object. No markdown, no explanations."""
