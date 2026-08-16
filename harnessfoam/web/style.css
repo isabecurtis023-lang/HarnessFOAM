@@ -194,6 +194,36 @@ textarea:focus, input:focus {
 }
 .dot.connected { background-color: #10b981; }
 
+.settings-nav-btn {
+    width: 100%;
+    min-height: 2.65rem;
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+.settings-nav-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(148, 163, 184, 0.42);
+}
+.settings-nav-btn:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.settings-icon { font-size: 1.15rem; line-height: 1; }
+
 /* File Explorer */
 .file-explorer {
     width: 250px;

@@ -1584,17 +1584,4 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Uptime Tracking Logic
-    const uptimeElement = document.getElementById("uptime-status");
-    if (uptimeElement) {
-        const startTime = Date.now();
-        setInterval(() => {
-            const diff = Math.floor((Date.now() - startTime) / 1000);
-            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const secs = String(diff % 60).padStart(2, '0');
-            uptimeElement.textContent = `Uptime: ${hrs}:${mins}:${secs}`;
-        }, 1000);
-    }
-
 });

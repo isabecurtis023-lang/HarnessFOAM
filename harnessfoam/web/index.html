@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=4">
+    <link rel="stylesheet" href="/static/style.css?v=5">
 </head>
 <body>
     <div class="app-container">
@@ -72,12 +72,8 @@
                     <div class="dot" id="connection-dot"></div>
                     <span id="connection-status">Agent Connection: Disconnected</span>
                 </div>
-                <div class="status-indicator">
-                    <div class="dot" style="background-color: #8b5cf6;"></div>
-                    <span id="uptime-status">Uptime: 00:00:00</span>
-                </div>
             </div>
-            <button id="settings-bottom-btn" class="secondary-btn" style="margin-top: 0.5rem; width: 100%; height: 2.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;" title="Settings">⚙️ Setting</button>
+            <button id="settings-bottom-btn" class="settings-nav-btn" title="Settings"><span class="settings-icon" aria-hidden="true">⚙</span><span>Setting</span></button>
         </aside>
         
         <div class="resizer" id="cp-resizer"></div>
@@ -218,6 +214,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=20"></script>
+    <script src="/static/app.js?v=21"></script>
 </body>
 </html>
