@@ -92,7 +92,13 @@ def main():
         # Fallback for old positional usage or explicit run command
         prompt = getattr(args, "prompt", "Default simulation prompt")
         output = getattr(args, "output", "demo_run_cli")
-        asyncio.run(run_simulation(prompt, output))
+        # Keep a reference so test doubles that replace asyncio.run do not
+        # leak an un-awaited coroutine during CLI validation.
+        simulation_coro = run_simulation(prompt, output)
+        try:
+            asyncio.run(simulation_coro)
+        finally:
+            simulation_coro.close()
     else:
         parser.print_help()
 
