@@ -1048,6 +1048,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     const reviewColor = data.visual_review.visual_review_status === "PASSED" ? "#10b981" : data.visual_review.visual_review_status === "SKIPPED" ? "#f59e0b" : "#ef4444";
                     appendLog(`<span class="info">Visual physics review: <strong style="color:${reviewColor}">${data.visual_review.visual_review_status}</strong></span>`);
                 }
+                if (Array.isArray(data.retry_history) && data.retry_history.length > 0) {
+                    data.retry_history.forEach(item => {
+                        const retryColor = item.status === "RETRY_EXHAUSTED" ? "#ef4444" : "#f59e0b";
+                        appendLog(`<span class="info">Recovery attempt ${item.attempt}: <strong style="color:${retryColor}">${item.status}</strong> (${(item.suggestions || []).length} suggestions)</span>`);
+                    });
+                }
                 if (data.llm_usage && data.llm_usage.cost_status) {
                     appendLog(`<span class="info">LLM usage: ${data.llm_usage.total_tokens ?? "unknown"} tokens, cost=${data.llm_usage.estimated_cost_usd == null ? "unpriced" : "$" + data.llm_usage.estimated_cost_usd.toFixed(6)}</span>`);
                 }
