@@ -292,6 +292,12 @@ def assistant_read(path: str):
     try: return read_file(path)
     except Exception as exc: return {"error": str(exc)}
 
+@app.get("/api/assistant/log")
+def assistant_log(path: str):
+    from harnessfoam.assistant_tools import analyze_log
+    try: return analyze_log(path)
+    except Exception as exc: return {"error": str(exc)}
+
 @app.post("/api/assistant/patch")
 def assistant_patch(req: AssistantPatchRequest):
     from harnessfoam.assistant_tools import apply_patch

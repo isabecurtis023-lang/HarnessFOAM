@@ -23,6 +23,30 @@ async def run_parameter_optimization(base_case: str, output_root: str, parameter
     return json.dumps(result, ensure_ascii=False)
 
 @mcp.tool()
+async def run_cavity_benchmark(output_dir: str = "tmp_mcp_cavity") -> str:
+    """Run the deterministic OpenFOAM 13 cavity smoke benchmark."""
+    import json
+    from harnessfoam.benchmark import run_cavity_smoke
+    return json.dumps(run_cavity_smoke(output_dir), ensure_ascii=False)
+
+@mcp.tool()
+async def search_repository(query: str) -> str:
+    """Search repository source files for an assistant diagnostic query."""
+    import json
+    from harnessfoam.assistant_tools import search_files
+    return json.dumps({"results": search_files(query)}, ensure_ascii=False)
+
+@mcp.tool()
+async def read_repository_file(path: str) -> str:
+    """Read one repository file within the HarnessFOAM root."""
+    import json
+    from harnessfoam.assistant_tools import read_file
+    try:
+        return json.dumps(read_file(path), ensure_ascii=False)
+    except Exception as exc:
+        return json.dumps({"error": str(exc)}, ensure_ascii=False)
+
+@mcp.tool()
 async def run_cfd_simulation(prompt: str, output_dir: str = "demo_run_mcp") -> str:
     """
     Executes a complete AI-driven Computational Fluid Dynamics (CFD) workflow using OpenFOAM.
