@@ -65,7 +65,7 @@ An integrated conversational AI helper overlay.
 * The settings dialog includes an opt-in **agent memory and self-improvement** switch. When enabled, each agent gets a local `.harnessfoam/memory/<agent>.md` document with an independent token budget; full documents are compressed automatically. It is off by default.
 * Framework-scoped assistant tools support repository search, file reading, and explicit-confirmation patches. Writes are confined to the repository root and can be reviewed as a diff before applying.
 * `/api/assistant/github-feedback` can prepare or, after explicit confirmation, create a GitHub Issue or Pull Request through the local `gh` CLI. The assistant never publishes silently.
-* Assistant tool commands include `/test` and `/benchmark cavity`; the corresponding API endpoints are `/api/assistant/tests` and `/api/assistant/cavity`. `/api/assistant/memory` exposes opt-in memory snapshots, and `/api/assistant/memory/clear` requires explicit confirmation before deletion.
+* Assistant tool commands include `/test`, `/benchmark cavity`, `/search <query>`, `/read <path>`, and `/log <path>`; the corresponding API endpoints are `/api/assistant/tests`, `/api/assistant/cavity`, `/api/assistant/search`, `/api/assistant/read`, and `/api/assistant/log`. `/api/assistant/memory` exposes opt-in memory snapshots, and `/api/assistant/memory/clear` requires explicit confirmation before deletion.
 
 The File Explorer keeps **Parameter Optimization** directly above the project tree, so a sweep is part of the same project workspace. The restored status bar reports environment, OpenFOAM, LLM, knowledge, connection, and uptime independently; a green status means the check completed successfully, not that every optional dependency is present.
 

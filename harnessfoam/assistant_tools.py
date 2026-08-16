@@ -76,4 +76,12 @@ def assistant_command(message: str, *, output_dir: str = "tmp_assistant_cavity")
         return {"tool": "run_unit_tests", "result": run_unit_tests()}
     if lower in {"/benchmark cavity", "run cavity benchmark", "运行 cavity benchmark", "运行cavity算例"}:
         return {"tool": "run_cavity_benchmark", "result": run_cavity_benchmark(output_dir)}
+    if lower.startswith("/search "):
+        return {"tool": "search_files", "result": {"results": search_files(text[8:].strip())}}
+    if lower.startswith("/read "):
+        try: return {"tool": "read_file", "result": read_file(text[6:].strip())}
+        except Exception as exc: return {"tool": "read_file", "result": {"error": str(exc)}}
+    if lower.startswith("/log "):
+        try: return {"tool": "analyze_log", "result": analyze_log(text[5:].strip())}
+        except Exception as exc: return {"tool": "analyze_log", "result": {"error": str(exc)}}
     return None
