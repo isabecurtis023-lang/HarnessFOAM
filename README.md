@@ -146,7 +146,7 @@ To attach the HarnessFOAM agentic backbone to your local IDE or orchestrator, ad
       "args": ["-m", "harnessfoam.cli", "mcp"],
       "cwd": "/absolute/path/to/HarnessFOAM",
       "env": {
-        "OPENAI_API_BASE": "https://uni-api.cstcloud.cn/v1",
+        "OPENAI_API_BASE": "your_base_url",
         "OPENAI_API_KEY": "your_api_key",
         "LLM_MODEL": "gpt-3.5-turbo"
       }
