@@ -59,7 +59,8 @@ def meshing_node(state: SimulationState) -> SimulationState:
     print(f"Meshing Agent: Generating mesh for case {state['case_id']}")
     
     llm_kwargs = state.get('llm_kwargs') or {}
-    mesh_results = generate_mesh_script(state['prompt'], llm_kwargs=llm_kwargs)
+    case_dir = state.get('case_dir', '')
+    mesh_results = generate_mesh_script(state['prompt'], case_dir=case_dir, llm_kwargs=llm_kwargs)
     state['logs']['is_gmsh_required'] = mesh_results['is_gmsh_required']
     state['logs']['mesh_python_script'] = mesh_results['python_script']
     

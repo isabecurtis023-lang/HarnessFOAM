@@ -29,8 +29,25 @@ Output ONLY the structured JSON. Do not provide explanations.
     chain = create_structured_chain(llm, prompt, MeshingScriptResult)
     return chain
 
-def generate_mesh_script(prompt_text: str, llm_kwargs: dict = None) -> dict:
+def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict = None) -> dict:
     """Execute the meshing agent to determine meshing strategy and generate scripts."""
+    # Check if a valid mesh.py already exists
+    if case_dir:
+        import os
+        mesh_script_path = os.path.join(case_dir, "mesh.py")
+        if os.path.exists(mesh_script_path):
+            try:
+                with open(mesh_script_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                if "import gmsh" in content:
+                    print(f"Meshing Agent: SKIP mesh.py generation (already exists and valid)", flush=True)
+                    return {
+                        "is_gmsh_required": True,
+                        "python_script": content
+                    }
+            except Exception as e:
+                print(f"Meshing Agent: Failed to read existing mesh.py: {e}")
+
     try:
         chain = build_meshing_agent(llm_kwargs=llm_kwargs)
         result = chain.invoke({"user_requirement": prompt_text})
