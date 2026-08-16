@@ -16,6 +16,7 @@ class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
             self.loop = asyncio.get_running_loop()
         except RuntimeError:
             self.loop = asyncio.get_event_loop()
+        self.usage = {}
 
     def on_chat_model_start(self, serialized: dict, messages: list, **kwargs):
         # Extract prompt from messages
@@ -48,6 +49,15 @@ class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
         
     def on_llm_end(self, response, **kwargs):
         try:
+            metadata = getattr(response, "llm_output", None) or getattr(response, "response_metadata", None) or {}
+            usage = metadata.get("token_usage") or metadata.get("usage") or {}
+            self.usage = {
+                "prompt_tokens": usage.get("prompt_tokens", usage.get("input_tokens")),
+                "completion_tokens": usage.get("completion_tokens", usage.get("output_tokens")),
+            }
+        except Exception:
+            self.usage = {}
+        try:
             asyncio.run_coroutine_threadsafe(
                 self.websocket.send_json({
                     "type": "llm_end",
@@ -71,8 +81,18 @@ class SimulationRequest(BaseModel):
     prompt: str
     output_dir: str = "demo_run_web"
 
+class OptimizationRequest(BaseModel):
+    base_case: str
+    output_root: str
+    parameters: list
+    objective: str = "last_time"
+    direction: str = "max"
+
 # Mount static files
 app.mount("/static", StaticFiles(directory=web_dir), name="static")
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(current_dir)), "assets")
+if os.path.isdir(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.get("/")
 def read_root():
@@ -228,6 +248,41 @@ class SaveFileRequest(BaseModel):
     path: str
     content: str
 
+class AssistantPatchRequest(BaseModel):
+    path: str
+    content: str = ""
+    confirm: bool = False
+
+class GitHubFeedbackRequest(BaseModel):
+    kind: str = "issue"
+    title: str
+    body: str
+    base: str = "master"
+    confirm: bool = False
+
+@app.post("/api/assistant/github-feedback")
+def assistant_github_feedback(req: GitHubFeedbackRequest):
+    from harnessfoam.github_feedback import create_feedback
+    return create_feedback(kind=req.kind, title=req.title, body=req.body,
+                           base=req.base, confirm=req.confirm)
+
+@app.get("/api/assistant/search")
+def assistant_search(q: str):
+    from harnessfoam.assistant_tools import search_files
+    return {"results": search_files(q)}
+
+@app.get("/api/assistant/read")
+def assistant_read(path: str):
+    from harnessfoam.assistant_tools import read_file
+    try: return read_file(path)
+    except Exception as exc: return {"error": str(exc)}
+
+@app.post("/api/assistant/patch")
+def assistant_patch(req: AssistantPatchRequest):
+    from harnessfoam.assistant_tools import apply_patch
+    try: return apply_patch(req.path, req.content, confirm=req.confirm)
+    except Exception as exc: return {"status": "ERROR", "error": str(exc)}
+
 @app.post("/api/save_file")
 def save_file(req: SaveFileRequest):
     import os
@@ -355,6 +410,12 @@ def knowledge_status():
     """Expose the local RAG corpus state to the Web UI and diagnostics."""
     from harnessfoam.knowledge import official_tutorial_stats
     return official_tutorial_stats()
+
+@app.post("/api/optimize")
+def optimize_case(req: OptimizationRequest):
+    """Run a bounded OpenFOAM 13 parameter sweep."""
+    from harnessfoam.optimization import run_parameter_sweep
+    return run_parameter_sweep(req.base_case, req.output_root, req.parameters, objective=req.objective, direction=req.direction)
 
 @app.get("/api/system_status")
 def system_status():
@@ -792,6 +853,8 @@ echo "Simulation complete!"
         api_key  = data.get("api_key", "").strip()
         post_prompt = data.get("post_prompt", "")
         max_loops = int(data.get("max_loops", 3))
+        memory_enabled = bool(data.get("memory_enabled", False))
+        memory_limits = data.get("memory_limits") or {}
         
         # Build runtime llm_kwargs – these take priority over .env / os.environ
         llm_kwargs: dict = {}
@@ -811,6 +874,8 @@ echo "Simulation complete!"
             case_dir=output_dir,
             llm_kwargs=llm_kwargs,
             max_errors=max_loops,
+            memory_enabled=memory_enabled,
+            memory_limits=memory_limits,
             # Deep Driving includes the visualizer stage automatically.
             auto_postprocess=True
         )
@@ -870,6 +935,18 @@ echo "Simulation complete!"
         response_payload["postprocess_status"] = final_state.get("logs", {}).get("postprocess_status", "SKIPPED")
         response_payload["preflight_ok"] = final_state.get("logs", {}).get("preflight_ok")
         response_payload["runtime_metrics"] = final_state.get("logs", {}).get("runtime_metrics", {})
+        response_payload["physics_metrics"] = final_state.get("logs", {}).get("physics_metrics", {})
+        response_payload["benchmark_metrics"] = final_state.get("logs", {}).get("benchmark_metrics", {})
+        response_payload["postprocess_metrics"] = final_state.get("logs", {}).get("postprocess_metrics", {})
+        response_payload["visual_review"] = final_state.get("logs", {}).get("visual_review", {})
+        response_payload["failure_ledger"] = final_state.get("logs", {}).get("failure_ledger_summary", {})
+        from harnessfoam.telemetry import estimate_cost
+        callback_usage = {}
+        for callback in llm_kwargs.get("callbacks", []):
+            callback_usage = getattr(callback, "usage", {}) or {}
+            if callback_usage:
+                break
+        response_payload["llm_usage"] = estimate_cost(callback_usage, llm_kwargs.get("model", ""))
         
         if final_state.get("image_base64"):
             response_payload["image_base64"] = final_state.get("image_base64")

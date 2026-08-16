@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="assets/harnessfoam-horse.png" alt="HarnessFOAM running horse logo" width="320">
+
 **An End-to-End Composable Multi-Agent Framework for Autonomous CFD Simulations in OpenFOAM.**
 <br>
 *Powered by LangGraph, the Model Context Protocol (MCP), and Vision-Language Models.*
@@ -60,6 +62,11 @@ An integrated conversational AI helper overlay.
 * Features a dedicated chat interface independent of the main generation workflow.
 * Allows users to query the assistant for help on CFD physics, OpenFOAM syntax, or to ask for optimization suggestions based on the current context.
 * Supports selecting specific reasoning models via a dropdown and tracks token usage.
+* The settings dialog includes an opt-in **agent memory and self-improvement** switch. When enabled, each agent gets a local `.harnessfoam/memory/<agent>.md` document with an independent token budget; full documents are compressed automatically. It is off by default.
+* Framework-scoped assistant tools support repository search, file reading, and explicit-confirmation patches. Writes are confined to the repository root and can be reviewed as a diff before applying.
+* `/api/assistant/github-feedback` can prepare or, after explicit confirmation, create a GitHub Issue or Pull Request through the local `gh` CLI. The assistant never publishes silently.
+
+The File Explorer keeps **Parameter Optimization** directly above the project tree, so a sweep is part of the same project workspace. The restored status bar reports environment, OpenFOAM, LLM, knowledge, connection, and uptime independently; a green status means the check completed successfully, not that every optional dependency is present.
 
 ---
 
@@ -88,6 +95,30 @@ graph TD
 3. **Deterministic Preflight** – Generated dictionaries are checked for required files, FoamFile headers, placeholder content, solver-specific dependencies and patch-name consistency before any solver starts.
 4. **Runtime Validation** – `checkMesh` runs before the solver. Logs are parsed for residuals, continuity errors, Courant numbers, time-step count and completion markers.
 5. **Bounded Error Feedback** – Validation failures are routed to Reviewer. Target files are identified deterministically when possible, and overwritten files are backed up under `.harnessfoam/backups/`.
+6. **OpenFOAM 13 Runtime Contract** – Each generated case receives `.harnessfoam/manifest.json`; solver logs must confirm OpenFOAM Version 13 before the run is accepted.
+7. **Structured Post-Processing** – Visualizer output is accompanied by machine-readable readers for `forceCoeffs.dat` and `forces.dat` when those function-object outputs exist.
+8. **Visual Review Boundary** – The Visual Reviewer is invoked after rendering. A failed VLM review re-enters the bounded Reviewer loop; an unavailable vision model is reported as `SKIPPED`, never as a false pass.
+9. **Dependency-Aware Generation and Failure Ledger** – Structural dictionaries are generated before fields, and each bounded retry records its error and repair suggestions in `.harnessfoam/failure_ledger.jsonl` for reproducible debugging and later evaluation.
+10. **Role-Routed RAG** – Architect, Input Writer and Reviewer receive different retrieval facets for physics/solver selection, dictionary syntax and troubleshooting rather than sharing one flat query.
+
+The repository also exposes `harnessfoam.benchmark.run_cavity_smoke(output_dir)` as an LLM-free OpenFOAM 13 regression smoke test. It generates the deterministic cavity case, runs `blockMesh → checkMesh → icoFoam`, verifies the Version 13 banner and checks the written velocity field for finite values and a physically plausible moving-lid magnitude.
+For cavity prompts, the workflow also applies a versioned reference gate covering final time, Courant number, continuity error, finite velocity and moving-lid velocity. The gate returns a score and named failed checks instead of treating solver exit code alone as correctness.
+Bounded parameter sweeps are available through `harnessfoam.optimization.run_parameter_sweep`, the Web API `/api/optimize`, and MCP `run_parameter_optimization`. Each candidate is isolated in its own directory, patched only at declared dictionary keys, executed with the OpenFOAM 13 runtime contract, ranked by a declared objective (`max` or `min`), and returned with a grouped parameter sensitivity summary.
+Every sweep also returns an evaluation report with total/pass/fail counts, success rate, objective range, and grouped failure types so benchmark claims can be reproduced from machine-readable output.
+The deterministic Python validation suite runs on every push and pull request through `.github/workflows/ci.yml`; OpenFOAM 13 runtime smoke tests remain available through `harnessfoam.benchmark.run_cavity_smoke` on a configured WSL host.
+The official tutorial regression registry in `harnessfoam.tutorial_regression` covers `cavity`, `pitzDaily`, `damBreak`, and `shockTube`; it copies each case into an isolated WSL directory and applies the same OpenFOAM 13 runtime gate.
+
+### Verified benchmark matrix
+
+The repository contains deterministic checks for all three interfaces:
+
+| Interface | Coverage | Result in the OpenFOAM 13 WSL environment |
+| --- | --- | --- |
+| CLI/Python | cavity smoke + official cavity/pitzDaily/damBreak/shockTube tutorials | Passed |
+| Web API/UI | environment, knowledge, optimization and WebSocket workflow endpoints | Passed |
+| MCP | knowledge status, simulation dispatch and parameter optimization tools | Passed |
+
+Run the local checks with `pytest tests/unit -q`, `python -m compileall -q harnessfoam`, and the tutorial registry from `harnessfoam.tutorial_regression`. A configured LLM is still required for non-fallback generation; the cavity benchmark remains LLM-free and reproducible.
 
 ---
 
@@ -180,6 +211,7 @@ To attach the HarnessFOAM agentic backbone to your local IDE or orchestrator, ad
 Once connected, your external agent will gain access to the `run_cfd_simulation(prompt, output_dir)` tool, effectively allowing it to dispatch complex CFD orchestration tasks directly to the HarnessFOAM LangGraph pipeline!
 
 The tool now returns the actual workflow status rather than an unconditional success message. It includes generated files, preflight status, runtime metrics, post-processing status and the latest execution error, if any. The lower-level MCP tools also return `UNKNOWN`, `FAILED` or `UNSUPPORTED` for cases/jobs they cannot execute; they do not fabricate successful job states.
+`apply_fix` now accepts explicit `{path, content}` patches, rejects paths outside the case directory, backs up replaced files under `.harnessfoam/backups/mcp_fix`, and returns `REQUIRES_WORKFLOW_RETRY` so preflight remains the gate before execution.
 
 ---
 

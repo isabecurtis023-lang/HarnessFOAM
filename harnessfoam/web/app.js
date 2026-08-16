@@ -8,8 +8,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const stopBtn = document.getElementById("stop-btn");
     const postprocessBtn = document.getElementById("postprocess-btn");
     const runOpenfoamBtn = document.getElementById("run-openfoam-btn");
+    const optimizeBtn = document.getElementById("optimize-btn");
     
     let ws = null;
+
+    if (optimizeBtn) {
+        optimizeBtn.addEventListener("click", async () => {
+            const baseCase = outputDirInput && outputDirInput.value.trim();
+            const path = document.getElementById("opt-param-path").value.trim();
+            const key = document.getElementById("opt-param-key").value.trim();
+            const rawValues = document.getElementById("opt-param-values").value.split(",").map(value => value.trim()).filter(Boolean);
+            const objective = document.getElementById("opt-objective").value;
+            const direction = document.getElementById("opt-direction").value;
+            if (!baseCase || !path || !key || !rawValues.length) {
+                appendLog('<span class="error">Optimization requires a case directory, dictionary path, key and values.</span>');
+                return;
+            }
+            const values = rawValues.map(value => Number.isNaN(Number(value)) ? value : Number(value));
+            optimizeBtn.disabled = true;
+            optimizeBtn.textContent = "Running sweep...";
+            appendLog(`<span class="info">Starting OpenFOAM 13 parameter sweep: ${key} = ${rawValues.join(', ')}</span>`);
+            try {
+                const response = await fetch('/api/optimize', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({base_case: baseCase, output_root: `${baseCase}/optimization_runs`, parameters: [{path, key, values}], objective, direction})
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || result.error || `HTTP ${response.status}`);
+                const evaluation = result.evaluation || {};
+                appendLog(`<span class="info" style="color:#10b981">Optimization complete: ${evaluation.passed ?? 0}/${evaluation.total ?? 0} passed, success rate ${(100 * (evaluation.success_rate ?? 0)).toFixed(1)}%</span>`);
+                if (result.best) appendLog(`<span class="info">Best case: <strong>${result.best.case_dir}</strong> parameters=${JSON.stringify(result.best.parameters)} objective=${result.best.objective}</span>`);
+                if (result.sensitivity) appendLog(`<span class="info">Sensitivity: ${JSON.stringify(result.sensitivity.parameters || {})}</span>`);
+            } catch (error) {
+                appendLog(`<span class="error">Optimization failed: ${error.message}</span>`);
+            } finally {
+                optimizeBtn.disabled = false;
+                optimizeBtn.textContent = "Run parameter sweep";
+            }
+        });
+    }
 
     // 2026-08-15 – Gemini 3.5 Flash: Centralized function to manage button states and colors based on directory & run status
     function updateButtonStates() {
@@ -122,7 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const ofDot = document.getElementById("openfoam-dot");
     const ofStatus = document.getElementById("openfoam-status");
       function checkOFStatus() {
-        fetch('/api/system_status')
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 20000);
+        fetch('/api/system_status', { signal: controller.signal })
             .then(r => r.json())
             .then(data => {
                 if (data.openfoam) {
@@ -175,10 +214,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     }, 100);
                 }
             })
-            .catch(() => {
+            .catch((error) => {
                 ofDot.style.backgroundColor = "#ef4444";
-                ofStatus.textContent = "OpenFOAM: Status Unknown";
-            });
+                ofStatus.textContent = error.name === "AbortError" ? "OpenFOAM: Check timed out" : "OpenFOAM: Status Unknown";
+            })
+            .finally(() => clearTimeout(timeout));
     }
     
     checkOFStatus();
@@ -249,11 +289,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedApiKey = localStorage.getItem("harnessfoam_api_key");
     const savedModelName = localStorage.getItem("harnessfoam_model_name");
     const savedMaxLoops = localStorage.getItem("harnessfoam_max_loops");
+    const savedMemoryEnabled = localStorage.getItem("harnessfoam_memory_enabled") === "true";
+    const defaultMemoryLimits = { architect: 2000, meshing: 2000, input_writer: 4000, preflight: 2500, runner: 2500, reviewer: 3500, visualizer: 2500, assistant: 4000 };
+    let savedMemoryLimits = {};
+    try { savedMemoryLimits = JSON.parse(localStorage.getItem("harnessfoam_memory_limits") || "{}"); } catch (_) {}
 
     const apiBaseInput = document.getElementById("api_base");
     const apiKeyInput = document.getElementById("api_key");
     const modelNameSelect = document.getElementById("model_name");
     const maxLoopsInput = document.getElementById("max_loops");
+    const memoryEnabledInput = document.getElementById("memory-enabled");
+    const memoryGrid = document.getElementById("memory-limits-grid");
+    if (memoryEnabledInput) memoryEnabledInput.checked = savedMemoryEnabled;
+    if (memoryGrid) Object.entries(defaultMemoryLimits).forEach(([agent, fallback]) => {
+        const row = document.createElement("label"); row.className = "memory-limit";
+        row.innerHTML = `${agent}<input type="number" min="256" max="20000" data-memory-agent="${agent}" value="${savedMemoryLimits[agent] || fallback}">`;
+        memoryGrid.appendChild(row);
+    });
 
     if (apiBaseInput && savedApiBase) apiBaseInput.value = savedApiBase;
     if (apiKeyInput && savedApiKey) apiKeyInput.value = savedApiKey;
@@ -831,6 +883,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("harnessfoam_api_key", apiKey);
                 localStorage.setItem("harnessfoam_model_name", modelName);
                 localStorage.setItem("harnessfoam_max_loops", maxLoops);
+                const memoryEnabled = document.getElementById("memory-enabled")?.checked || false;
+                const memoryLimits = Object.fromEntries(Array.from(document.querySelectorAll("[data-memory-agent]")).map(input => [input.dataset.memoryAgent, parseInt(input.value, 10) || 2000]));
+                localStorage.setItem("harnessfoam_memory_enabled", String(memoryEnabled));
+                localStorage.setItem("harnessfoam_memory_limits", JSON.stringify(memoryLimits));
 
                 modal.classList.remove("show");
                 if (typeof checkLLMStatus === "function") {
@@ -877,6 +933,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const modelName = document.getElementById("model_name").value.trim();
         const apiKey = document.getElementById("api_key").value.trim();
         const maxLoops = document.getElementById("max_loops") ? parseInt(document.getElementById("max_loops").value.trim()) || 3 : 3;
+        const memoryEnabled = document.getElementById("memory-enabled")?.checked || false;
+        const memoryLimits = Object.fromEntries(Array.from(document.querySelectorAll("[data-memory-agent]")).map(input => [input.dataset.memoryAgent, parseInt(input.value, 10) || 2000]));
         
         ws.onopen = () => {
             connectionDot.classList.add("connected");
@@ -889,7 +947,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 api_base: apiBase,
                 model: modelName,
                 api_key: apiKey,
-                max_loops: maxLoops
+                max_loops: maxLoops,
+                memory_enabled: memoryEnabled,
+                memory_limits: memoryLimits
             }));
         };
         
@@ -980,6 +1040,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.postprocess_status) {
                     const postColor = data.postprocess_status === "SUCCESS" ? "#10b981" : "#f59e0b";
                     appendLog(`<span class="info">Post-process: <strong style="color:${postColor}">${data.postprocess_status}</strong></span>`);
+                }
+                if (data.postprocess_metrics && data.postprocess_metrics.available) {
+                    appendLog(`<span class="info">Structured post-process metrics available: forceCoeffs/forces tables</span>`);
+                }
+                if (data.visual_review && data.visual_review.visual_review_status) {
+                    const reviewColor = data.visual_review.visual_review_status === "PASSED" ? "#10b981" : data.visual_review.visual_review_status === "SKIPPED" ? "#f59e0b" : "#ef4444";
+                    appendLog(`<span class="info">Visual physics review: <strong style="color:${reviewColor}">${data.visual_review.visual_review_status}</strong></span>`);
+                }
+                if (data.llm_usage && data.llm_usage.cost_status) {
+                    appendLog(`<span class="info">LLM usage: ${data.llm_usage.total_tokens ?? "unknown"} tokens, cost=${data.llm_usage.estimated_cost_usd == null ? "unpriced" : "$" + data.llm_usage.estimated_cost_usd.toFixed(6)}</span>`);
                 }
                 
                 if (data.image_base64) {
@@ -1512,19 +1582,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
             alert("Network error deleting item");
         }
-    }
-
-    // Uptime Tracking Logic
-    const uptimeElement = document.getElementById("uptime-status");
-    if (uptimeElement) {
-        const startTime = Date.now();
-        setInterval(() => {
-            const diff = Math.floor((Date.now() - startTime) / 1000);
-            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const secs = String(diff % 60).padStart(2, '0');
-            uptimeElement.textContent = `Uptime: ${hrs}:${mins}:${secs}`;
-        }, 1000);
     }
 
 });

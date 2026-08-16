@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 240" role="img" aria-label="OpenFOAM horse rein logo option 3">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs>
+<rect width="760" height="240" rx="30" fill="#0b1020"/>
+<path d="M96 148c39-69 105-88 184-57 40 16 70 16 114-4 39-18 61-43 73-70" fill="none" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
+<path d="M87 151c63-3 91 40 160 37 91-4 128-93 211-92 64 1 100 34 190 15" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+<path d="M455 78l26-35 22 13 20-27 17 40-29 18M178 171l-10 38M298 174l9 35M414 150l28 57" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="115" y="148" fill="#e0f2fe" font-family="Arial Black,Arial,sans-serif" font-size="43" font-weight="900" letter-spacing="-2">OpenFOAM</text>
+<text x="510" y="125" fill="#f5f3ff" font-family="Arial Black,Arial,sans-serif" font-size="30">Harness</text>
+<text x="511" y="157" fill="#94a3b8" font-family="monospace" font-size="13" letter-spacing="2">REIN THE SOLVER</text>
+</svg>

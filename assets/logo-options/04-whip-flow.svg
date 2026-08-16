@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 240" role="img" aria-label="OpenFOAM horse whip flow logo option 4">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#38bdf8"/><stop offset=".6" stop-color="#8b5cf6"/><stop offset="1" stop-color="#f472b6"/></linearGradient></defs>
+<rect width="760" height="240" rx="30" fill="#111827"/>
+<path d="M101 157c24-65 84-90 153-70 55 16 89 37 137 9 33-19 55-49 74-80" fill="none" stroke="url(#g)" stroke-width="7" stroke-linecap="round"/>
+<path d="M464 77l23-35 22 11 20-28 18 43-31 19M173 170l-11 39M286 174l8 35M401 151l27 56" fill="none" stroke="#e0f2fe" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="120" y="150" fill="#e0f2fe" font-family="Arial Black,Arial,sans-serif" font-size="43" font-weight="900" letter-spacing="-2">OpenFOAM</text>
+<path d="M492 169c53 18 92 2 119-31 20-24 49-31 74-12" fill="none" stroke="#f472b6" stroke-width="4" stroke-linecap="round"/>
+<text x="510" y="122" fill="#f5f3ff" font-family="Arial Black,Arial,sans-serif" font-size="30">Harness</text>
+<text x="510" y="151" fill="#94a3b8" font-family="monospace" font-size="13" letter-spacing="2">DRIVE THE FLOW</text>
+</svg>

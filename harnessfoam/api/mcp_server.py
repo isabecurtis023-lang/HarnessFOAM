@@ -15,6 +15,14 @@ async def get_knowledge_status() -> str:
     return json.dumps(official_tutorial_stats(), ensure_ascii=False)
 
 @mcp.tool()
+async def run_parameter_optimization(base_case: str, output_root: str, parameters: list, objective: str = "last_time", direction: str = "max") -> str:
+    """Run a bounded OpenFOAM 13 parameter grid and return the best result."""
+    import json
+    from harnessfoam.optimization import run_parameter_sweep
+    result = run_parameter_sweep(base_case, output_root, parameters, objective=objective, direction=direction)
+    return json.dumps(result, ensure_ascii=False)
+
+@mcp.tool()
 async def run_cfd_simulation(prompt: str, output_dir: str = "demo_run_mcp") -> str:
     """
     Executes a complete AI-driven Computational Fluid Dynamics (CFD) workflow using OpenFOAM.
@@ -51,6 +59,10 @@ async def run_cfd_simulation(prompt: str, output_dir: str = "demo_run_mcp") -> s
             f"Preflight: {logs.get('preflight_ok', 'N/A')}\n"
             f"Post-process: {logs.get('postprocess_status', 'N/A')}\n"
             f"Runtime Metrics: {metrics}\n"
+            f"Physics Metrics: {logs.get('physics_metrics', {})}\n"
+            f"Benchmark Metrics: {logs.get('benchmark_metrics', {})}\n"
+            f"Failure Ledger: {logs.get('failure_ledger_summary', {})}\n"
+            f"Post-process Metrics: {logs.get('postprocess_metrics', {})}\n"
             f"Errors: {logs.get('execution_error', '')}\n"
             f"{files_summary}"
         )

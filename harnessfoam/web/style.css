@@ -194,6 +194,36 @@ textarea:focus, input:focus {
 }
 .dot.connected { background-color: #10b981; }
 
+.settings-nav-btn {
+    width: 100%;
+    min-height: 2.65rem;
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.65rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+.settings-nav-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(148, 163, 184, 0.42);
+}
+.settings-nav-btn:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+.settings-icon { font-size: 1.15rem; line-height: 1; }
+
 /* File Explorer */
 .file-explorer {
     width: 250px;
@@ -218,6 +248,25 @@ textarea:focus, input:focus {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+.brand-logo { width: 180px; height: 88px; object-fit: contain; display: block; margin-bottom: 0.55rem; border-radius: 8px; }
+
+.optimization-card {
+    margin: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(96, 165, 250, 0.22);
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8));
+}
+.optimization-title { color: #bfdbfe; font-size: 0.78rem; font-weight: 600; margin-bottom: 0.55rem; }
+.optimization-card input, .optimization-card select { margin: 0 0 0.4rem; padding: 0.48rem; font-size: 0.75rem; }
+.optimization-row { display: flex; gap: 0.35rem; }
+.optimization-row select { min-width: 0; flex: 1; }
+.optimization-card .secondary-btn { width: 100%; margin-top: 0.15rem; padding: 0.55rem; }
+.settings-hint { color: var(--text-muted); font-size: 0.72rem; line-height: 1.35; margin-top: 0.35rem; }
+.memory-settings input[type="checkbox"] { width: auto; margin-right: 0.35rem; accent-color: var(--accent); }
+.memory-limits-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-top: 0.5rem; }
+.memory-limit { display: flex; align-items: center; gap: 0.3rem; color: var(--text-muted); font-size: 0.7rem; }
+.memory-limit input { padding: 0.35rem; font-size: 0.72rem; }
 
 .icon-btn {
     background: transparent;

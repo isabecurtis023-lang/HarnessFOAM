@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
+  <title id="title">HarnessFOAM running horse</title>
+  <desc id="desc">A forward-running horse wearing a saddle</desc>
+  <defs>
+    <linearGradient id="horse" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#38bdf8"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient>
+    <linearGradient id="saddle" x1="0" x2="1"><stop stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient>
+  </defs>
+  <rect width="320" height="96" rx="22" fill="#0b1220"/>
+  <g fill="none" stroke="url(#horse)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- head, neck and flowing mane -->
+    <path d="M211 29c14-12 26-15 38-8l12 10-14 9-11 17M229 25l8-14 10 12M246 21l13-10 4 18"/>
+    <!-- running horse body and legs -->
+    <path fill="url(#horse)" stroke="none" d="M76 52c17-21 49-28 82-20 17 4 30 12 43 8 11-3 19-12 27-22l17 11-13 20c-10 16-26 25-48 26H98z"/>
+    <path d="M78 53c20-21 51-27 82-20 18 4 28 12 42 8 12-3 20-12 28-23M119 69l-13 20M153 69l4 20M188 63l21 18M97 58l-29 16"/>
+    <!-- tail and wind lines -->
+    <path d="M82 54c-22-4-34-16-45-28M77 61c-25 3-40-3-53-14M74 69c-20 11-35 12-49 8" opacity=".85"/>
+  </g>
+  <!-- saddle and harness -->
+  <path d="M126 38c15-9 35-8 48 3l-4 20c-14 6-31 5-46-2z" fill="url(#saddle)" stroke="#fcd34d" stroke-width="2"/>
+  <path d="M123 57c16 8 34 9 50 3M133 39c5 14 7 24 6 31M163 39c-3 13-3 24 1 28" fill="none" stroke="#fde68a" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M223 37c-20 17-35 22-53 22" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- ground motion -->
+  <path d="M39 88h215" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+  <path d="M25 82h37M50 75h21M246 79h28" stroke="#64748b" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+</svg>

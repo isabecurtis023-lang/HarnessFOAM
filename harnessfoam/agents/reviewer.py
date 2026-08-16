@@ -5,6 +5,7 @@ from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import re
+from harnessfoam.knowledge import format_context
 
 load_dotenv()
 
@@ -46,6 +47,9 @@ def build_reviewer_agent(llm_kwargs: dict = None):
         template="""You are an expert in OpenFOAM simulation and numerical modeling.
 Your task is to review the provided error logs and diagnose the underlying issues. 
 
+Canonical troubleshooting guidance:
+{retrieved_context}
+
 Error Logs:
 {error_logs}
 
@@ -54,7 +58,7 @@ If there are errors, set is_resolved to False and provide concrete suggestions f
 
 Provide the response in the structured format required.
 """,
-        input_variables=["error_logs"]
+        input_variables=["error_logs", "retrieved_context"]
     )
     
     chain = create_structured_chain(llm, prompt, ReviewResult)
@@ -64,7 +68,7 @@ def analyze_errors(error_logs: str, llm_kwargs: dict = None) -> dict:
     """Execute the reviewer agent to analyze logs and suggest fixes."""
     try:
         chain = build_reviewer_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"error_logs": error_logs})
+        result = chain.invoke({"error_logs": error_logs, "retrieved_context": format_context(error_logs, k=4, route="reviewer")})
         return {
             "is_resolved": result.is_resolved,
             "suggestions": [{"file": f.file_name, "folder": f.folder_name, "fix": f.suggestion} for f in result.fixes]
@@ -77,12 +81,12 @@ def analyze_errors(error_logs: str, llm_kwargs: dict = None) -> dict:
             "suggestions": deterministic or [{"file": "controlDict", "folder": "system", "fix": "Reduce time step to satisfy Courant number limit."}]
         }
 
-def analyze_visual_anomalies(image_path: str, user_requirement: str) -> dict:
+def analyze_visual_anomalies(image_path: str, user_requirement: str, llm_kwargs: dict = None) -> dict:
     """Execute VLM to visually inspect the physical accuracy of the rendered output."""
     import base64
     from langchain_core.messages import HumanMessage
     
-    llm = build_llm(temperature=0.1)
+    llm = build_llm(temperature=0.1, **(llm_kwargs or {}))
     
     try:
         with open(image_path, "rb") as image_file:
@@ -98,14 +102,13 @@ def analyze_visual_anomalies(image_path: str, user_requirement: str) -> dict:
         # We skip structured output here for broader VLM compatibility
         response = llm.invoke([message])
         
-        return {
-            "visual_inspection_passed": "yes" in response.content.lower() or "correct" in response.content.lower(),
-            "vlm_feedback": response.content
-        }
+        passed = "yes" in response.content.lower() or "correct" in response.content.lower()
+        return {"visual_inspection_passed": passed, "visual_review_status": "PASSED" if passed else "FAILED", "vlm_feedback": response.content}
     except Exception as e:
         print(f"Visual Reviewer (VLM) failed: {e}")
         return {
-            "visual_inspection_passed": True, # Fallback to true
-            "vlm_feedback": "Graceful Degradation: VLM analysis bypassed due to API error."
+            "visual_inspection_passed": None,
+            "visual_review_status": "SKIPPED",
+            "vlm_feedback": "VLM analysis skipped because the configured vision model was unavailable."
         }
 

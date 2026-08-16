@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 240" role="img" aria-label="OpenFOAM horse saddle logo option 2">
+<defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#818cf8"/></linearGradient></defs>
+<rect width="760" height="240" rx="30" fill="#101827"/>
+<path d="M104 166c22-61 77-91 139-77 45 10 78 41 121 22 28-12 48-35 68-70l15 46 31 12-50 13c-24 42-64 70-122 72H133" fill="none" stroke="url(#g)" stroke-width="6" stroke-linejoin="round"/>
+<path d="M207 98c34-29 92-29 127 5l-16 46H221z" fill="#a78bfa" fill-opacity=".22" stroke="#c4b5fd" stroke-width="4"/>
+<text x="222" y="131" fill="#f5f3ff" font-family="Arial Black,Arial,sans-serif" font-size="29" font-weight="900" letter-spacing="-1">Harness</text>
+<path d="M205 151c45 14 91 12 138-4" fill="none" stroke="#fbbf24" stroke-width="5" stroke-linecap="round"/>
+<text x="99" y="207" fill="#e0f2fe" font-family="Arial Black,Arial,sans-serif" font-size="31" letter-spacing="3">OpenFOAM</text>
+<text x="520" y="140" fill="#94a3b8" font-family="monospace" font-size="13" letter-spacing="2">SADDLE THE FLOW</text>
+</svg>
