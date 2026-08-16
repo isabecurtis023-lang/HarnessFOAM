@@ -165,6 +165,58 @@ def get_file_content(path: str = ""):
     except Exception as e:
         return {"error": str(e), "content": ""}
 
+@app.get("/api/check_env")
+def check_env():
+    import subprocess
+    import shutil
+    import importlib.util
+
+    status = {"missing_libs": [], "wsl_missing_gmsh": False}
+    
+    # Check Python local libs
+    required_libs = ["langgraph", "langchain", "openai", "pyvista", "matplotlib"]
+    for lib in required_libs:
+        if importlib.util.find_spec(lib) is None:
+            status["missing_libs"].append(lib)
+            
+    # Check WSL gmsh
+    if shutil.which("wsl"):
+        try:
+            res = subprocess.run(["wsl", "python3", "-c", "import gmsh"], capture_output=True)
+            if res.returncode != 0:
+                status["wsl_missing_gmsh"] = True
+        except:
+            pass
+
+    return status
+
+@app.post("/api/install_env")
+def install_env():
+    import subprocess
+    import shutil
+    import sys
+    
+    results = []
+    
+    # 1. Install local python deps if any
+    try:
+        req_file = os.path.join(os.path.dirname(current_dir), "requirements.txt")
+        if os.path.exists(req_file):
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", req_file], check=True)
+            results.append("Local dependencies installed.")
+    except Exception as e:
+        results.append(f"Failed to install local deps: {e}")
+        
+    # 2. Install wsl gmsh
+    if shutil.which("wsl"):
+        try:
+            subprocess.run(["wsl", "python3", "-m", "pip", "install", "gmsh", "--break-system-packages"], check=True)
+            results.append("WSL gmsh installed.")
+        except Exception as e:
+            results.append(f"Failed to install WSL gmsh: {e}")
+            
+    return {"message": " ".join(results)}
+
 class SaveFileRequest(BaseModel):
     path: str
     content: str

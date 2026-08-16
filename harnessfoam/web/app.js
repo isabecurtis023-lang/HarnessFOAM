@@ -89,8 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Check OpenFOAM Status
     const ofDot = document.getElementById("openfoam-dot");
     const ofStatus = document.getElementById("openfoam-status");
-    
-    function checkOFStatus() {
+      function checkOFStatus() {
         fetch('/api/system_status')
             .then(r => r.json())
             .then(data => {
