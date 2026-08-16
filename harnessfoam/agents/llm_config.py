@@ -85,6 +85,10 @@ class DeepSeekRobustParser(BaseOutputParser):
         for cand in reversed(candidates):
             try:
                 parsed = json.loads(cand)
+                # Handle cases where model wraps the actual answer in an 'instance' key inside the schema
+                if isinstance(parsed, dict) and "properties" in parsed and "instance" in parsed:
+                    if isinstance(parsed["instance"], dict):
+                        parsed = parsed["instance"]
                 return self.pydantic_object.model_validate(parsed)
             except Exception as e:
                 last_exception = e
@@ -96,6 +100,9 @@ class DeepSeekRobustParser(BaseOutputParser):
             elif text_clean.startswith("```"): text_clean = text_clean[3:]
             if text_clean.endswith("```"): text_clean = text_clean[:-3]
             parsed = json.loads(text_clean.strip())
+            if isinstance(parsed, dict) and "properties" in parsed and "instance" in parsed:
+                if isinstance(parsed["instance"], dict):
+                    parsed = parsed["instance"]
             return self.pydantic_object.model_validate(parsed)
         except Exception as e:
             raise OutputParserException(f"Failed to parse JSON. Last error: {last_exception or e}\nRaw text: {text}")
