@@ -52,27 +52,53 @@ class DeepSeekRobustParser(BaseOutputParser):
         # Strip <think>...</think> block if it exists
         text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
         
-        # Strip ```json ... ``` blocks
-        text = text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-            
-        text = text.strip()
+        # Helper to extract all top-level JSON objects/arrays
+        def extract_json_objects(s):
+            objects = []
+            depth = 0
+            start = -1
+            in_string = False
+            escape = False
+            for i, c in enumerate(s):
+                if c == '"' and not escape:
+                    in_string = not in_string
+                elif not in_string:
+                    if c in '{[':
+                        if depth == 0:
+                            start = i
+                        depth += 1
+                    elif c in '}]':
+                        depth -= 1
+                        if depth == 0 and start != -1:
+                            objects.append(s[start:i+1])
+                            start = -1
+                if c == '\\' and not escape:
+                    escape = True
+                else:
+                    escape = False
+            return objects
+
+        candidates = extract_json_objects(text)
         
-        # Try to find JSON object or array
-        match = re.search(r'(\{.*\})|(\[.*\])', text, re.DOTALL)
-        if match:
-            text = match.group(0)
-            
+        last_exception = None
+        # Models usually output the real answer at the end, so we check in reverse order
+        for cand in reversed(candidates):
+            try:
+                parsed = json.loads(cand)
+                return self.pydantic_object.model_validate(parsed)
+            except Exception as e:
+                last_exception = e
+                
+        # Fallback to basic stripping if bracket extraction failed or returned nothing valid
         try:
-            parsed = json.loads(text)
+            text_clean = text.strip()
+            if text_clean.startswith("```json"): text_clean = text_clean[7:]
+            elif text_clean.startswith("```"): text_clean = text_clean[3:]
+            if text_clean.endswith("```"): text_clean = text_clean[:-3]
+            parsed = json.loads(text_clean.strip())
             return self.pydantic_object.model_validate(parsed)
         except Exception as e:
-            raise OutputParserException(f"Failed to parse JSON: {e}\nRaw text: {text}")
+            raise OutputParserException(f"Failed to parse JSON. Last error: {last_exception or e}\nRaw text: {text}")
 
 def create_structured_chain(llm, prompt, pydantic_schema):
     """
@@ -83,8 +109,9 @@ def create_structured_chain(llm, prompt, pydantic_schema):
     schema_json_escaped = schema_json.replace("{", "{{").replace("}", "}}")
     
     format_instructions = (
-        "\n\nIMPORTANT: You must respond ONLY with valid JSON matching this schema. "
-        "Do not include any explanation, markdown formatting, or <think> tags. Just the JSON object:\n"
+        "\n\nIMPORTANT: You must respond ONLY with a valid JSON instance that strictly conforms to the following JSON schema. "
+        "Do not output the schema itself. Do not include any explanation, markdown formatting, or <think> tags. "
+        "Just the generated JSON instance data:\n"
         f"{schema_json_escaped}"
     )
     
