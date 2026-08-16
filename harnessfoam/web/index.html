@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=3">
+    <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
     <div class="app-container">
@@ -16,6 +16,7 @@
             <button id="toggle-cp-btn" class="toggle-cp-btn" title="Collapse Panel">◀</button>
             <header style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
+                    <img src="/static/harnessfoam-logo.svg" alt="HarnessFOAM" class="brand-logo">
                     <h1>HarnessFOAM</h1>
                     <p>AI-Powered CFD Automation</p>
                 </div>
@@ -49,8 +50,6 @@
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Always show Stop button, disabled by default -->
                 <button id="stop-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Stop</button>
             </div>
-
-            
 
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem;">
                 <div class="status-indicator">
@@ -119,6 +118,11 @@
                         <label for="max_loops">Max Agent Loops (Error Retries)</label>
                         <input type="number" id="max_loops" placeholder="e.g. 3" value="3" min="1" max="10">
                     </div>
+                    <div class="input-group memory-settings">
+                        <label><input type="checkbox" id="memory-enabled"> Enable agent memory &amp; self-improvement (default off)</label>
+                        <p class="settings-hint">Each agent keeps a local lesson document under .harnessfoam/memory and compresses it automatically.</p>
+                        <div id="memory-limits-grid" class="memory-limits-grid"></div>
+                    </div>
                     <button id="save-settings-btn" class="primary-btn" style="width: 100%; margin-top: 0.5rem;">Save Settings</button>
                 </div>
             </div>
@@ -129,6 +133,17 @@
             <div class="explorer-header">
                 <h3>Project Files</h3>
                 <button id="refresh-files-btn" class="icon-btn" title="Refresh folder">🔄</button>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">Parameter Optimization</div>
+                <input id="opt-param-path" type="text" value="system/controlDict" placeholder="Dictionary path">
+                <input id="opt-param-key" type="text" value="deltaT" placeholder="Parameter key">
+                <input id="opt-param-values" type="text" value="0.001,0.002" placeholder="Candidate values, comma-separated">
+                <div class="optimization-row">
+                    <select id="opt-objective"><option value="last_time">Final time</option><option value="max_courant">Max Courant</option><option value="max_abs_continuity_error">Continuity error</option></select>
+                    <select id="opt-direction"><option value="max">Maximize</option><option value="min">Minimize</option></select>
+                </div>
+                <button id="optimize-btn" class="secondary-btn">Run parameter sweep</button>
             </div>
             <div class="explorer-body">
                 <ul id="file-tree" class="file-tree">
@@ -203,6 +218,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=18"></script>
+    <script src="/static/app.js?v=20"></script>
 </body>
 </html>

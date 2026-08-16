@@ -44,6 +44,7 @@ def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None) -> str:
         return "#!/bin/bash\n#SBATCH -N 1\n#SBATCH -n 32\n./Allrun -parallel"
 
 import subprocess
+import os
 
 def execute_simulation(case_dir: str) -> tuple[bool, str]:
     """Physically runs the simulation locally in the case directory. Returns (success, output)."""

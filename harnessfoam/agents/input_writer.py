@@ -8,6 +8,7 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
 from harnessfoam.knowledge import format_context
+from harnessfoam.case_dependencies import order_plan
 
 load_dotenv()
 
@@ -27,8 +28,11 @@ def write_simulation_inputs(
     llm = build_llm(**llm_kwargs)
     generated_files: Dict[str, str] = {}
     review_suggestions = review_suggestions or []
-    retrieved_context = format_context(prompt_text, k=5)
+    retrieved_context = format_context(prompt_text, k=5, route="input_writer")
 
+    # Generate dictionaries in dependency order so later fields can rely on
+    # the selected solver, physical model and exact mesh patch names.
+    plan = order_plan(plan)
     for item in plan:
         file_name   = item['file']
         folder_name = item['folder']

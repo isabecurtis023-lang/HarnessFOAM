@@ -107,8 +107,54 @@ def retrieve(query: str, k: int = 4) -> List[KnowledgeChunk]:
     return [item[2] for item in ranked[:k]]
 
 
-def format_context(query: str, k: int = 4, max_chars: int = 2500) -> str:
-    chunks = retrieve(query, k=k)
+def retrieve_multistage(query: str, k: int = 5) -> List[KnowledgeChunk]:
+    """Use deterministic query facets and diversity re-ranking offline.
+
+    This is deliberately dependency-free: it provides the same separation of
+    concerns as a multi-index RAG pipeline while remaining usable on a fresh
+    installation without a vector database.
+    """
+    base = (query or "").strip()
+    facets = [
+        base,
+        f"{base} solver application fvSchemes fvSolution",
+        f"{base} physics boundary condition mesh",
+        f"{base} error troubleshooting residual continuity",
+        f"{base} file dictionary controlDict blockMeshDict",
+    ]
+    candidates = {}
+    for facet in facets:
+        for rank, chunk in enumerate(retrieve(facet, k=max(k * 2, 8))):
+            score = max(k * 2 - rank, 1)
+            candidates[chunk.key] = (candidates.get(chunk.key, (0, chunk))[0] + score, chunk)
+    ranked = sorted(candidates.values(), key=lambda item: (-item[0], item[1].key))
+    selected = []
+    selected_tokens = []
+    for score, chunk in ranked:
+        tokens = _tokens(chunk.text)
+        overlap = max((len(tokens & other) / max(len(tokens | other), 1) for other in selected_tokens), default=0)
+        if selected and overlap > 0.72:
+            continue
+        selected.append(chunk)
+        selected_tokens.append(tokens)
+        if len(selected) >= k:
+            break
+    return selected
+
+
+def retrieve_routed(query: str, route: str = "general", k: int = 5) -> List[KnowledgeChunk]:
+    """Retrieve context for an operational agent role."""
+    route_queries = {
+        "architect": f"{query} physics solver application model tutorial case",
+        "input_writer": f"{query} dictionary syntax file controlDict fvSchemes fvSolution boundary field",
+        "reviewer": f"{query} error troubleshooting repair FOAM FATAL residual continuity patch",
+        "postprocess": f"{query} postProcess sample forceCoeffs forces field statistics visualization",
+    }
+    return retrieve_multistage(route_queries.get(route, query), k=k)
+
+
+def format_context(query: str, k: int = 4, max_chars: int = 2500, route: str = "general") -> str:
+    chunks = retrieve_routed(query, route=route, k=k)
     if not chunks:
         return "No canonical OpenFOAM guidance matched this request."
     return "\n".join(f"[{chunk.key}] {chunk.text[:max_chars]}" for chunk in chunks)

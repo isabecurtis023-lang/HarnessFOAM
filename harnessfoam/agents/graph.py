@@ -1,4 +1,5 @@
 from typing import TypedDict, List, Dict, Any, Optional
+import os
 from langgraph.graph import StateGraph, END
 import time
 
@@ -20,9 +21,25 @@ class SimulationState(TypedDict, total=False):
     current_step: str
     image_base64: Optional[str]
     llm_kwargs: Optional[Dict[str, Any]]  # Runtime API overrides passed from server
+    memory_enabled: bool
+    memory_limits: Dict[str, int]
 
 from harnessfoam.agents.architect import plan_simulation
 from harnessfoam.validation import validate_case_files, validate_runtime
+from harnessfoam.case_manifest import write_manifest
+from harnessfoam.postprocess import collect_postprocess_metrics
+from harnessfoam.physics_validation import validate_physics
+from harnessfoam.failure_ledger import summarize_failure_ledger
+from harnessfoam.reference_benchmarks import evaluate_reference_case
+from harnessfoam.memory import record_event, record_self_improvement, initialize_memory
+
+def _memory_event(state: SimulationState, agent: str, outcome: str, details: str = "") -> None:
+    if not state.get('memory_enabled') or not state.get('case_dir'):
+        return
+    path = record_event(state['case_dir'], agent, outcome=outcome, details=details,
+                        enabled=True, limits=state.get('memory_limits') or {})
+    if path:
+        state.setdefault('logs', {})['memory'] = {'enabled': True, 'last_path': path}
 
 def architect_node(state: SimulationState) -> SimulationState:
     # Normalize state for backward compatibility
@@ -43,13 +60,18 @@ def architect_node(state: SimulationState) -> SimulationState:
         state['max_errors'] = 3
     if 'status' not in state:
         state['status'] = 'PENDING'
+    if state.get('memory_enabled') and state.get('case_dir'):
+        state.setdefault('logs', {})['memory_documents'] = initialize_memory(
+            state['case_dir'], enabled=True, limits=state.get('memory_limits') or {})
     state['current_step'] = 'architect'
+    _memory_event(state, 'architect', 'started', state.get('prompt', ''))
 
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
     llm_kwargs = state.get('llm_kwargs') or {}
     state['plan'] = plan_simulation(state['prompt'], llm_kwargs=llm_kwargs)
     state['file_plan'] = state['plan']
     print(f"Architect plan generated: {len(state['plan'])} files.")
+    _memory_event(state, 'architect', 'success', f"generated {len(state['plan'])} files")
     return state
 
 from harnessfoam.agents.meshing import generate_mesh_script
@@ -57,6 +79,7 @@ from harnessfoam.agents.visualizer import generate_visualization_script
 
 def meshing_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'meshing'
+    _memory_event(state, 'meshing', 'started', state.get('prompt', ''))
     print(f"Meshing Agent: Generating mesh for case {state['case_dir']}")
     llm_kwargs = state.get('llm_kwargs') or {}
     case_dir = state.get('case_dir', '')
@@ -83,6 +106,7 @@ from harnessfoam.agents.input_writer import write_simulation_inputs
 
 def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
+    _memory_event(state, 'input_writer', 'started', state.get('prompt', ''))
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
     llm_kwargs = state.get('llm_kwargs') or {}
     case_dir = state.get('case_dir', '')
@@ -127,6 +151,8 @@ def preflight_node(state: SimulationState) -> SimulationState:
     ok, errors = validate_case_files(state['case_dir'], state.get('plan', []))
     state['logs']['preflight_ok'] = ok
     state['logs']['preflight_errors'] = errors
+    if ok:
+        state['logs']['manifest'] = write_manifest(state['case_dir'], runtime="WSL" if __import__('shutil').which('wsl') else "Native")
     if not ok:
         state['status'] = 'FAILED'
         state['logs']['execution_error'] = "Preflight validation failed:\n" + "\n".join(errors)
@@ -274,10 +300,22 @@ echo "Simulation complete!"
                 state['logs']['execution_error'] = state['logs']['run_stdout'][-2000:] # Pass the tail of the log to reviewer
                 print(f"Runner Agent failed with code {process.returncode}")
             else:
-                runtime_ok, metrics, metric_errors = validate_runtime(state['logs']['run_stdout'])
+                runtime_ok, metrics, metric_errors = validate_runtime(state['logs']['run_stdout'], expected_version="13")
                 state['logs']['runtime_metrics'] = metrics
+                physics_ok, physics_metrics, physics_errors = validate_physics(
+                    state['case_dir'], state.get('prompt', ''), solver_name
+                )
+                state['logs']['physics_metrics'] = physics_metrics
+                benchmark_ok, benchmark_metrics, benchmark_errors = evaluate_reference_case(
+                    state.get('prompt', ''), metrics, physics_metrics
+                )
+                state['logs']['benchmark_metrics'] = benchmark_metrics
+                if not physics_ok:
+                    metric_errors.extend(physics_errors)
+                if not benchmark_ok:
+                    metric_errors.extend([f"Reference benchmark: {error}" for error in benchmark_errors])
                 if runtime_ok:
-                    state['status'] = 'SUCCESS'
+                    state['status'] = 'SUCCESS' if not metric_errors else 'FAILED'
                 else:
                     state['status'] = 'FAILED'
                     state['logs']['execution_error'] = "Runtime validation failed:\n" + "\n".join(metric_errors)
@@ -301,6 +339,7 @@ echo "Simulation complete!"
 
 def reviewer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'reviewer'
+    _memory_event(state, 'reviewer', 'started', state.get('logs', {}).get('execution_error', ''))
     print(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
     
@@ -308,13 +347,33 @@ def reviewer_node(state: SimulationState) -> SimulationState:
     llm_kwargs = state.get('llm_kwargs') or {}
     review_results = analyze_errors(error_logs, llm_kwargs=llm_kwargs)
     state['logs']['review_suggestions'] = review_results['suggestions']
+    # Keep a local failure ledger for reproducible retries and future active
+    # learning; do not store prompts or logs outside the selected case.
+    import json
+    ledger_path = os.path.join(state['case_dir'], '.harnessfoam', 'failure_ledger.jsonl')
+    os.makedirs(os.path.dirname(ledger_path), exist_ok=True)
+    with open(ledger_path, 'a', encoding='utf-8', newline='') as ledger:
+        ledger.write(json.dumps({
+            'attempt': state['errors'],
+            'prompt': state.get('prompt', ''),
+            'error': error_logs[-4000:],
+            'suggestions': review_results['suggestions'],
+        }, ensure_ascii=False) + '\n')
+    state['logs']['failure_ledger'] = ledger_path
+    state['logs']['failure_ledger_summary'] = summarize_failure_ledger(state['case_dir'])
+    if state.get('memory_enabled'):
+        record_self_improvement(state['case_dir'], agent='reviewer', error=error_logs,
+                                fix=str(review_results['suggestions']), enabled=True,
+                                limits=state.get('memory_limits') or {})
     print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
 from harnessfoam.agents.visualizer import execute_visualization
+from harnessfoam.agents.reviewer import analyze_visual_anomalies
 
 def visualizer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'visualizer'
+    _memory_event(state, 'visualizer', 'started', state.get('post_prompt', ''))
     print(f"Visualization Agent: Generating visuals...")
     
     # If the user provided a custom post-processing prompt, use it; else use the main prompt
@@ -336,6 +395,16 @@ def visualizer_node(state: SimulationState) -> SimulationState:
         if img_base64:
             state['image_base64'] = img_base64
             state['logs']['postprocess_status'] = 'SUCCESS'
+            state['logs']['postprocess_metrics'] = collect_postprocess_metrics(state['case_dir'])
+            visual_review = analyze_visual_anomalies(
+                os.path.join(state['case_dir'], 'visualization.png'),
+                state.get('prompt', ''),
+                llm_kwargs=llm_kwargs,
+            )
+            state['logs']['visual_review'] = visual_review
+            if visual_review.get('visual_review_status') == 'FAILED':
+                state['status'] = 'FAILED'
+                state['logs']['execution_error'] = 'Visual physics review failed:\n' + visual_review.get('vlm_feedback', '')
             print("Visualization successfully rendered.")
         else:
             state['logs']['postprocess_status'] = 'FAILED'
@@ -367,6 +436,9 @@ def route_after_review(state: SimulationState) -> str:
 
 def route_after_preflight(state: SimulationState) -> str:
     return "review" if state.get('status') == 'FAILED' else "run"
+
+def route_after_visualizer(state: SimulationState) -> str:
+    return "review" if state.get('status') == 'FAILED' and state.get('errors', 0) < state.get('max_errors', 3) else "end"
 
 def create_workflow() -> StateGraph:
     workflow = StateGraph(SimulationState)
@@ -407,7 +479,7 @@ def create_workflow() -> StateGraph:
             "input_writer": "input_writer"
         }
     )
-    workflow.add_edge("visualizer", "end")
+    workflow.add_conditional_edges("visualizer", route_after_visualizer, {"review": "reviewer", "end": "end"})
     workflow.add_edge("end", END)
     
     return workflow.compile()
