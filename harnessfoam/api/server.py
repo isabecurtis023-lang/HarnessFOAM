@@ -424,9 +424,10 @@ async def run_command_and_stream(cmd: list, cwd: str, agent_name: str, websocket
             if line is None:
                 break
             await websocket.send_text(json.dumps({
-                "type": "step",
+                "type": "openfoam_log" if agent_name == "OpenFOAM" else "step",
                 "agent": agent_name,
-                "message": line.strip()
+                "message": line.strip(),
+                "is_error": False
             }))
             
         await loop.run_in_executor(None, proc.wait)

@@ -373,37 +373,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const tabConsole = document.getElementById("tab-console");
     const tabFileViewer = document.getElementById("tab-file-viewer");
+    const tabAgentContext = document.getElementById("tab-agent-context");
     
     function setTabActive(activeTabId) {
-        if (tabConsole) {
-            tabConsole.style.background = activeTabId === 'tab-console' ? "rgba(255,255,255,0.1)" : "transparent";
-            tabConsole.style.border = activeTabId === 'tab-console' ? "1px solid rgba(255,255,255,0.05)" : "1px solid transparent";
-            tabConsole.style.borderBottom = "none";
-            tabConsole.style.color = activeTabId === 'tab-console' ? "var(--text-main)" : "var(--text-muted)";
-            document.getElementById("console-output").style.display = activeTabId === 'tab-console' ? "flex" : "none";
-        }
+        // Alias for backwards compatibility if needed
+        switchToTab(activeTabId.replace('tab-', '').replace('-', '_'));
+    }
+
+    function switchToTab(tabName) {
+        const consoleOutput = document.getElementById("console-output");
+        const fileViewer = document.getElementById("file-viewer");
+        const agentContextOutput = document.getElementById("agent-context-output");
+        const openfoamLogsOutput = document.getElementById("openfoam-logs-output");
+        const tabOpenfoamLogs = document.getElementById("tab-openfoam-logs");
+
+        // Hide all bodies
+        if (consoleOutput) consoleOutput.style.display = "none";
+        if (agentContextOutput) agentContextOutput.style.display = "none";
+        if (openfoamLogsOutput) openfoamLogsOutput.style.display = "none";
+        if (fileViewer) fileViewer.style.display = "none";
         
+        // Remove active styling
+        if (tabConsole) {
             tabConsole.classList.remove("active");
             tabConsole.style.background = "transparent";
             tabConsole.style.color = "var(--text-muted)";
+            tabConsole.style.border = "1px solid transparent";
+            tabConsole.style.borderBottom = "none";
         }
         if (tabAgentContext) {
             tabAgentContext.classList.remove("active");
             tabAgentContext.style.background = "transparent";
             tabAgentContext.style.color = "var(--text-muted)";
+            tabAgentContext.style.border = "1px solid transparent";
+            tabAgentContext.style.borderBottom = "none";
+        }
+        if (tabOpenfoamLogs) {
+            tabOpenfoamLogs.classList.remove("active");
+            tabOpenfoamLogs.style.background = "transparent";
+            tabOpenfoamLogs.style.color = "var(--text-muted)";
+            tabOpenfoamLogs.style.border = "1px solid transparent";
+            tabOpenfoamLogs.style.borderBottom = "none";
         }
         if (tabFileViewer) {
             tabFileViewer.classList.remove("active");
             tabFileViewer.style.background = "transparent";
             tabFileViewer.style.color = "var(--text-muted)";
+            tabFileViewer.style.border = "1px solid transparent";
+            tabFileViewer.style.borderBottom = "none";
         }
 
-        if (tabName === "console") {
+        // Apply active styling to the selected tab
+        if (tabName === "console" || tabName === "console_output") {
             if (consoleOutput) consoleOutput.style.display = "flex";
             if (tabConsole) {
                 tabConsole.classList.add("active");
                 tabConsole.style.background = "rgba(255,255,255,0.1)";
                 tabConsole.style.color = "var(--text-main)";
+                tabConsole.style.border = "1px solid rgba(255,255,255,0.05)";
+                tabConsole.style.borderBottom = "none";
             }
         } else if (tabName === "agent_context") {
             if (agentContextOutput) agentContextOutput.style.display = "flex";
@@ -411,13 +439,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 tabAgentContext.classList.add("active");
                 tabAgentContext.style.background = "rgba(255,255,255,0.1)";
                 tabAgentContext.style.color = "var(--text-main)";
+                tabAgentContext.style.border = "1px solid rgba(255,255,255,0.05)";
+                tabAgentContext.style.borderBottom = "none";
             }
-        } else if (tabName === "file_viewer") {
+        } else if (tabName === "openfoam_logs") {
+            if (openfoamLogsOutput) openfoamLogsOutput.style.display = "flex";
+            if (tabOpenfoamLogs) {
+                tabOpenfoamLogs.classList.add("active");
+                tabOpenfoamLogs.style.background = "rgba(255,255,255,0.1)";
+                tabOpenfoamLogs.style.color = "var(--text-main)";
+                tabOpenfoamLogs.style.border = "1px solid rgba(255,255,255,0.05)";
+                tabOpenfoamLogs.style.borderBottom = "none";
+            }
+        } else if (tabName === "file_viewer" || tabName === "file_viewer_content") {
             if (fileViewer) fileViewer.style.display = "flex";
             if (tabFileViewer) {
                 tabFileViewer.classList.add("active");
                 tabFileViewer.style.background = "rgba(255,255,255,0.1)";
                 tabFileViewer.style.color = "var(--text-main)";
+                tabFileViewer.style.border = "1px solid rgba(255,255,255,0.05)";
+                tabFileViewer.style.borderBottom = "none";
             }
         }
     }
@@ -427,6 +468,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (tabAgentContext) {
         tabAgentContext.addEventListener("click", () => switchToTab("agent_context"));
+    }
+    const tabOpenfoamLogs = document.getElementById("tab-openfoam-logs");
+    if (tabOpenfoamLogs) {
+        tabOpenfoamLogs.addEventListener("click", () => switchToTab("openfoam_logs"));
     }
     if (tabFileViewer) {
         tabFileViewer.addEventListener("click", (e) => {
@@ -933,6 +978,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     appendLog(`<span class="info">ℹ️ ${data.message}</span>`);
                 } else if (data.type === "step") {
                     appendLog(`<span class="log-agent agent-Runner">[${data.agent}]</span> <span>${data.message}</span>`);
+                } else if (data.type === "openfoam_log") {
+                    const openfoamLogsOutput = document.getElementById("openfoam-logs-output");
+                    if (openfoamLogsOutput) {
+                        const div = document.createElement("div");
+                        div.className = "log-entry";
+                        div.style.color = data.is_error ? "#ef4444" : "var(--text-main)";
+                        div.textContent = data.message;
+                        openfoamLogsOutput.appendChild(div);
+                        openfoamLogsOutput.scrollTop = openfoamLogsOutput.scrollHeight;
+                    }
+                    switchToTab("openfoam_logs");
                 } else if (data.type === "complete") {
                     appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
                     ws.close();

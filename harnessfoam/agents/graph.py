@@ -171,21 +171,58 @@ echo "Simulation complete!"
             os.chmod(allrun_path, 0o755)
         except: pass
         
-        # Actually execute the script locally
+                # Actually execute the script locally with streaming
         import subprocess
+        import asyncio
+        
+        # Try to extract the websocket from llm_kwargs callbacks to stream logs
+        websocket = None
+        loop = None
         try:
-            result = subprocess.run(
+            callbacks = state.get('llm_kwargs', {}).get('callbacks', [])
+            if callbacks:
+                websocket = callbacks[0].websocket
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    loop = asyncio.get_event_loop()
+        except:
+            pass
+
+        try:
+            process = subprocess.Popen(
                 ["sh", "./Allrun"],
                 cwd=state['case_dir'],
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
-                timeout=300
+                bufsize=1
             )
-            state['logs']['run_stdout'] = result.stdout
-            state['logs']['run_stderr'] = result.stderr
-            if result.returncode != 0:
+            
+            run_output = []
+            for line in process.stdout:
+                line_clean = line.rstrip()
+                run_output.append(line_clean)
+                print(f"[OpenFOAM] {line_clean}")
+                if websocket and loop:
+                    try:
+                        asyncio.run_coroutine_threadsafe(
+                            websocket.send_json({
+                                "type": "openfoam_log",
+                                "message": line_clean,
+                                "is_error": False
+                            }),
+                            loop
+                        )
+                    except Exception:
+                        pass
+                        
+            process.wait(timeout=300)
+            state['logs']['run_stdout'] = "\n".join(run_output)
+            state['logs']['run_stderr'] = ""
+            if process.returncode != 0:
                 state['status'] = 'FAILED'
-                print(f"Runner Agent failed with code {result.returncode}:\n{result.stderr}")
+                print(f"Runner Agent failed with code {process.returncode}")
             else:
                 state['status'] = 'SUCCESS'
         except Exception as e:

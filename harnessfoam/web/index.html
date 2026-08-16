@@ -138,6 +138,7 @@
                 <div class="tabs" style="display: flex; gap: 0.25rem;">
                     <button id="tab-console" class="tab-btn active" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.05); border-bottom: none; padding: 0.4rem 1.25rem; color: var(--text-main); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; cursor: pointer; border-radius: 8px 8px 0 0;">Console</button>
                     <button id="tab-agent-context" class="tab-btn" style="background: transparent; border: 1px solid transparent; border-bottom: none; padding: 0.4rem 1.25rem; color: var(--text-muted); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; cursor: pointer; border-radius: 8px 8px 0 0;">Agent Context</button>
+                    <button id="tab-openfoam-logs" class="tab-btn" style="background: transparent; border: 1px solid transparent; border-bottom: none; padding: 0.4rem 1.25rem; color: var(--text-muted); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; cursor: pointer; border-radius: 8px 8px 0 0;">OpenFOAM Logs</button>
                     <button id="tab-file-viewer" class="tab-btn" style="background: transparent; border: 1px solid transparent; border-bottom: none; padding: 0.4rem 1.25rem; color: var(--text-muted); font-size: 0.85rem; font-family: 'JetBrains Mono', monospace; cursor: pointer; border-radius: 8px 8px 0 0; display: none;">File Viewer <span id="close-file-viewer-btn" style="margin-left: 8px; color: #ef4444; font-size: 0.8rem;">✖</span></button>
                 </div>
             </div>
@@ -148,6 +149,10 @@
             
             <div class="terminal-body" id="agent-context-output" style="display: none;">
                 <div class="log-entry system" style="margin-bottom: 1rem;">Agent LLM Context Trajectory will appear here during execution.</div>
+            </div>
+            
+            <div class="terminal-body" id="openfoam-logs-output" style="display: none;">
+                <div class="log-entry system" style="margin-bottom: 1rem;">OpenFOAM solver execution logs will stream here.</div>
             </div>
             
             <div id="file-viewer" style="display: none; flex: 1; flex-direction: column; background-color: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-top: none; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; overflow: hidden;">
@@ -185,6 +190,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=14"></script>
+    <script src="/static/app.js?v=15"></script>
 </body>
 </html>
