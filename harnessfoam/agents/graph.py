@@ -184,10 +184,7 @@ echo "Simulation complete!"
             callbacks = state.get('llm_kwargs', {}).get('callbacks', [])
             if callbacks:
                 websocket = callbacks[0].websocket
-                try:
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    loop = asyncio.get_event_loop()
+                loop = getattr(callbacks[0], 'loop', None)
         except:
             pass
 
