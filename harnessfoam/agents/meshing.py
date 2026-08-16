@@ -19,6 +19,12 @@ def build_meshing_agent(llm_kwargs: dict = None):
 Analyze the user requirement and decide whether a custom Gmsh python script is required. If the user mentions complex geometries like cylinders, airfoils, or explicitly requests gmsh, set is_gmsh_required to True and write the python script using the `gmsh` API to produce a 'mesh.msh' file.
 If it is a simple box cavity or native mesh dictionaries are sufficient, set is_gmsh_required to False.
 
+CRITICAL GMSH RULES:
+1. Do NOT reference non-existent tags (e.g. Physical Curve -1). Always create geometries and capture their returned tags, then use those exact tags.
+2. Ensure you properly define Physical Groups for all boundaries (e.g., 'inlet', 'outlet', 'topAndBottom', 'cylinder') and 'internalField' for the fluid volume.
+3. The script must initialize gmsh (`gmsh.initialize()`) and write the mesh (`gmsh.write("mesh.msh")`) before `gmsh.finalize()`.
+4. Ensure 2D meshes are exactly one cell thick in the Z-direction if requested as 2D.
+
 User requirement: {user_requirement}
 
 Output ONLY the structured JSON. Do not provide explanations.

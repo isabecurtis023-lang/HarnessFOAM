@@ -144,9 +144,9 @@ set -e
 # Source OpenFOAM environment in WSL/Linux if not already set
 if [ -z "$WM_PROJECT_DIR" ]; then
     if [ -f /usr/share/openfoam/etc/bashrc ]; then
-        . /usr/share/openfoam/etc/bashrc
+        . /usr/share/openfoam/etc/bashrc 2>/dev/null || true
     elif [ -f /opt/openfoam*/etc/bashrc ]; then
-        . /opt/openfoam*/etc/bashrc
+        . /opt/openfoam*/etc/bashrc 2>/dev/null || true
     fi
 fi
 
