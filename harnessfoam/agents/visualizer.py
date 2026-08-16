@@ -65,7 +65,6 @@ def execute_visualization(case_dir: str, pyvista_script: str) -> str:
         
     try:
         import shutil
-        import os
         python_exe = "python3" if shutil.which("python3") else "python"
         
         # In a real environment, this would run `python viz_postprocess.py`
