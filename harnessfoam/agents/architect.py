@@ -41,11 +41,11 @@ Make sure you generate all the necessary files for the user's requirements.
     
     chain = create_structured_chain(llm, prompt, ArchitectPlan)
     return chain
-def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
+def plan_simulation(prompt_text: str, llm_kwargs: dict = None, memory_context: str = "") -> List[dict]:
     """Execute the architect agent to get a structured plan."""
     try:
         chain = build_architect_agent(llm_kwargs=llm_kwargs)
-        enriched_prompt = f"{prompt_text}\n\nCanonical retrieved OpenFOAM guidance:\n{format_context(prompt_text, k=5, route='architect')}"
+        enriched_prompt = f"{prompt_text}\n\nCanonical retrieved OpenFOAM guidance:\n{format_context(prompt_text, k=5, route='architect')}" + memory_context
         result = chain.invoke({"user_requirement": enriched_prompt})
         return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
     except Exception as e:

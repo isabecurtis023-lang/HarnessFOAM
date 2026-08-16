@@ -31,7 +31,7 @@ from harnessfoam.postprocess import collect_postprocess_metrics
 from harnessfoam.physics_validation import validate_physics
 from harnessfoam.failure_ledger import summarize_failure_ledger
 from harnessfoam.reference_benchmarks import evaluate_reference_case
-from harnessfoam.memory import record_event, record_self_improvement, initialize_memory
+from harnessfoam.memory import record_event, record_self_improvement, initialize_memory, prompt_context
 
 def _memory_event(state: SimulationState, agent: str, outcome: str, details: str = "") -> None:
     if not state.get('memory_enabled') or not state.get('case_dir'):
@@ -68,7 +68,8 @@ def architect_node(state: SimulationState) -> SimulationState:
 
     print(f"Architect Agent: Planning simulation for case {state['case_id']}")
     llm_kwargs = state.get('llm_kwargs') or {}
-    state['plan'] = plan_simulation(state['prompt'], llm_kwargs=llm_kwargs)
+    memory = prompt_context(state.get('case_dir'), 'architect', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {})
+    state['plan'] = plan_simulation(state['prompt'], llm_kwargs=llm_kwargs, memory_context=memory)
     state['file_plan'] = state['plan']
     print(f"Architect plan generated: {len(state['plan'])} files.")
     _memory_event(state, 'architect', 'success', f"generated {len(state['plan'])} files")
@@ -116,7 +117,8 @@ def input_writer_node(state: SimulationState) -> SimulationState:
         state['prompt'], 
         case_dir=case_dir, 
         llm_kwargs=llm_kwargs,
-        review_suggestions=suggestions
+        review_suggestions=suggestions,
+        memory_context=prompt_context(case_dir, 'input_writer', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {})
     )
     
     # Write files to disk
@@ -345,7 +347,7 @@ def reviewer_node(state: SimulationState) -> SimulationState:
     
     error_logs = state['logs'].get('execution_error', 'Unknown error')
     llm_kwargs = state.get('llm_kwargs') or {}
-    review_results = analyze_errors(error_logs, llm_kwargs=llm_kwargs)
+    review_results = analyze_errors(error_logs, llm_kwargs=llm_kwargs, memory_context=prompt_context(state.get('case_dir'), 'reviewer', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
     state['logs']['review_suggestions'] = review_results['suggestions']
     # Keep a local failure ledger for reproducible retries and future active
     # learning; do not store prompts or logs outside the selected case.
@@ -418,6 +420,12 @@ def visualizer_node(state: SimulationState) -> SimulationState:
 
 def end_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'end'
+    if state.get('memory_enabled') and state.get('case_dir'):
+        outcome = 'success' if state.get('status') == 'SUCCESS' else 'failed'
+        for agent in ('architect', 'meshing', 'input_writer', 'preflight', 'runner', 'visualizer'):
+            record_event(state['case_dir'], agent, outcome=outcome,
+                         details=f"workflow ended with status={state.get('status')}",
+                         enabled=True, limits=state.get('memory_limits') or {})
     return state
 
 def should_review(state: SimulationState) -> str:

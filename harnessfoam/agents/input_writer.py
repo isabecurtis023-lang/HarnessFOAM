@@ -18,7 +18,8 @@ def write_simulation_inputs(
     prompt_text: str,
     case_dir: str = "",
     llm_kwargs: dict = None,
-    review_suggestions: List[Dict[str, str]] = None
+    review_suggestions: List[Dict[str, str]] = None,
+    memory_context: str = ""
 ) -> Dict[str, str]:
     """
     Execute the input writer agent to generate file contents.
@@ -87,7 +88,7 @@ def write_simulation_inputs(
             f"Generate the complete OpenFOAM '{file_name}' file for the '{folder_name}/' directory.\n\n"
             f"CRITICAL RULE: If generating 'controlDict', you MUST set 'purgeWrite 1;' to save disk space.\n\n"
             f"Simulation requirement: {prompt_text}\n\n"
-            f"Canonical OpenFOAM guidance retrieved for this case:\n{retrieved_context}\n\n"
+            f"Canonical OpenFOAM guidance retrieved for this case:\n{retrieved_context}\n{memory_context}\n"
             f"{suggestion_text}"
             f"Previously generated files (for consistency reference):\n{context_str}\n\n"
             f"Output ONLY the raw file content. Start with the FoamFile header. Do not use Markdown formatting or code fences."

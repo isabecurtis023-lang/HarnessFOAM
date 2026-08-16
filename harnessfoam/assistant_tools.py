@@ -1,6 +1,9 @@
 """Safe, repository-scoped tools exposed to the Web assistant."""
 from __future__ import annotations
 import difflib
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 MAX_READ = 2 * 1024 * 1024
@@ -35,11 +38,42 @@ def search_files(query: str, repo_root: str | None = None) -> list[dict]:
     return results
 
 def apply_patch(path: str, content: str, repo_root: str | None = None, *, confirm: bool = False) -> dict:
-    if not confirm:
-        return {"status": "REQUIRES_CONFIRMATION", "path": path, "message": "Explicit confirmation is required before writing."}
     target = resolve_repo_path(path, repo_root)
     old = target.read_text(encoding="utf-8") if target.exists() else ""
+    diff = "".join(difflib.unified_diff(old.splitlines(True), content.splitlines(True), fromfile=path, tofile=path))
+    if not confirm:
+        return {"status": "REQUIRES_CONFIRMATION", "path": path,
+                "message": "Explicit confirmation is required before writing.", "diff": diff[:20000]}
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content, encoding="utf-8")
-    diff = "".join(difflib.unified_diff(old.splitlines(True), content.splitlines(True), fromfile=path, tofile=path))
     return {"status": "APPLIED", "path": str(target), "diff": diff[:20000]}
+
+def run_unit_tests(repo_root: str | None = None) -> dict:
+    root = resolve_repo_path(".", repo_root)
+    result = subprocess.run([sys.executable, "-m", "pytest", "tests/unit", "-q"], cwd=root,
+                            capture_output=True, text=True, timeout=180)
+    return {"status": "PASSED" if result.returncode == 0 else "FAILED",
+            "returncode": result.returncode, "output": (result.stdout + result.stderr)[-12000:]}
+
+def run_cavity_benchmark(output_dir: str = "tmp_assistant_cavity") -> dict:
+    from harnessfoam.benchmark import run_cavity_smoke
+    return run_cavity_smoke(output_dir)
+
+def analyze_log(path: str, repo_root: str | None = None) -> dict:
+    data = read_file(path, repo_root)["content"]
+    patterns = {
+        "fatal_errors": r"(?im)^.*(?:FOAM FATAL|ERROR|SIGFPE).*$",
+        "courant": r"(?im)^.*Courant Number.*$",
+        "continuity": r"(?im)^.*time step continuity errors.*$",
+    }
+    return {"path": path, "matches": {key: re.findall(pattern, data)[-20:] for key, pattern in patterns.items()}}
+
+def assistant_command(message: str, *, output_dir: str = "tmp_assistant_cavity") -> dict | None:
+    """Handle safe deterministic commands before delegating explanatory chat to the LLM."""
+    text = (message or "").strip()
+    lower = text.lower()
+    if lower in {"/test", "/tests", "运行测试", "run tests"}:
+        return {"tool": "run_unit_tests", "result": run_unit_tests()}
+    if lower in {"/benchmark cavity", "run cavity benchmark", "运行 cavity benchmark", "运行cavity算例"}:
+        return {"tool": "run_cavity_benchmark", "result": run_cavity_benchmark(output_dir)}
+    return None

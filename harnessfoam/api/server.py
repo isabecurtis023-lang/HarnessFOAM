@@ -260,6 +260,21 @@ class GitHubFeedbackRequest(BaseModel):
     base: str = "master"
     confirm: bool = False
 
+class MemoryClearRequest(BaseModel):
+    case_dir: str
+    agent: str | None = None
+    confirm: bool = False
+
+@app.get("/api/assistant/memory")
+def assistant_memory(case_dir: str, enabled: bool = False):
+    from harnessfoam.memory import memory_snapshot
+    return memory_snapshot(case_dir, enabled=enabled)
+
+@app.post("/api/assistant/memory/clear")
+def assistant_memory_clear(req: MemoryClearRequest):
+    from harnessfoam.memory import clear_memory
+    return clear_memory(req.case_dir, req.agent, confirm=req.confirm)
+
 @app.post("/api/assistant/github-feedback")
 def assistant_github_feedback(req: GitHubFeedbackRequest):
     from harnessfoam.github_feedback import create_feedback
@@ -282,6 +297,16 @@ def assistant_patch(req: AssistantPatchRequest):
     from harnessfoam.assistant_tools import apply_patch
     try: return apply_patch(req.path, req.content, confirm=req.confirm)
     except Exception as exc: return {"status": "ERROR", "error": str(exc)}
+
+@app.post("/api/assistant/tests")
+def assistant_tests():
+    from harnessfoam.assistant_tools import run_unit_tests
+    return run_unit_tests()
+
+@app.post("/api/assistant/cavity")
+def assistant_cavity(output_dir: str = "tmp_assistant_cavity"):
+    from harnessfoam.assistant_tools import run_cavity_benchmark
+    return run_cavity_benchmark(output_dir)
 
 @app.post("/api/save_file")
 def save_file(req: SaveFileRequest):
@@ -996,6 +1021,15 @@ Keep your answers helpful, concise, and focused on OpenFOAM setups or prompt eng
             api_key = data.get("api_key", "").strip()
             
             if not user_msg: continue
+
+            from harnessfoam.assistant_tools import assistant_command
+            tool_result = assistant_command(user_msg, output_dir=output_dir or "tmp_assistant_cavity")
+            if tool_result:
+                await websocket.send_json({"type": "tool_result", "tool": tool_result["tool"], "result": tool_result["result"]})
+                await websocket.send_json({"type": "chunk", "text": json.dumps(tool_result["result"], ensure_ascii=False, indent=2)})
+                await websocket.send_json({"type": "usage", "prompt": 0, "completion": 0})
+                await websocket.send_json({"type": "done"})
+                continue
             
             llm_kwargs: dict = {}
             if api_base: llm_kwargs["base_url"] = api_base

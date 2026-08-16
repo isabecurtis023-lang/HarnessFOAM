@@ -64,11 +64,11 @@ Provide the response in the structured format required.
     chain = create_structured_chain(llm, prompt, ReviewResult)
     return chain
 
-def analyze_errors(error_logs: str, llm_kwargs: dict = None) -> dict:
+def analyze_errors(error_logs: str, llm_kwargs: dict = None, memory_context: str = "") -> dict:
     """Execute the reviewer agent to analyze logs and suggest fixes."""
     try:
         chain = build_reviewer_agent(llm_kwargs=llm_kwargs)
-        result = chain.invoke({"error_logs": error_logs, "retrieved_context": format_context(error_logs, k=4, route="reviewer")})
+        result = chain.invoke({"error_logs": error_logs + memory_context, "retrieved_context": format_context(error_logs, k=4, route="reviewer")})
         return {
             "is_resolved": result.is_resolved,
             "suggestions": [{"file": f.file_name, "folder": f.folder_name, "fix": f.suggestion} for f in result.fixes]
