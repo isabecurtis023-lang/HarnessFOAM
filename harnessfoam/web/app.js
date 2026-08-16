@@ -903,6 +903,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (streamContainer) {
                     streamContainer.removeAttribute("id"); // finalize it
                 }
+            } else if (data.type === "openfoam_log") {
+                appendOpenFOAMLog(data.message, data.is_error);
             } else if (data.type === "complete") {
                 appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
                 if (data.directory) {

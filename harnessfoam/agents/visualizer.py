@@ -17,8 +17,9 @@ def build_visualizer_agent(llm_kwargs: dict = None):
     
     prompt = PromptTemplate(
         template="""You are an expert in scientific data visualization using PyVista.
-Analyze the user requirement. If the user requests to visualize a field (e.g. 'Visualize the magnitude of velocity'), set is_visualization_required to True and write a Python script using the `pyvista` library to read OpenFOAM VTK data and render the specified field, saving it to 'visualization.png'.
-If no visualization is requested, set is_visualization_required to False.
+Analyze the user requirement. You MUST ALWAYS write a Python script using the `pyvista` library to read OpenFOAM VTK data and render the specified field, saving it to 'visualization.png'.
+If the user does not explicitly specify what to visualize, default to visualizing the velocity magnitude (U).
+Set is_visualization_required to True always, unless the user explicitly commands you not to visualize anything.
 
 User requirement: {user_requirement}
 
