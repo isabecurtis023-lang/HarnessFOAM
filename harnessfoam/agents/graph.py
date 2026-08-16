@@ -166,16 +166,43 @@ echo "Simulation complete!"
 """
         with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
             f.write(local_script)
+            
+        try:
+            os.chmod(allrun_path, 0o755)
+        except: pass
+        
+        # Actually execute the script locally
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["sh", "./Allrun"],
+                cwd=state['case_dir'],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            state['logs']['run_stdout'] = result.stdout
+            state['logs']['run_stderr'] = result.stderr
+            if result.returncode != 0:
+                state['status'] = 'FAILED'
+                print(f"Runner Agent failed with code {result.returncode}:\n{result.stderr}")
+            else:
+                state['status'] = 'SUCCESS'
+        except Exception as e:
+            state['status'] = 'FAILED'
+            state['logs']['run_stderr'] = str(e)
+            print(f"Runner Agent execution exception: {e}")
+            
     else:
         with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
             f.write(slurm_script)
+            
+        try:
+            os.chmod(allrun_path, 0o755)
+        except: pass
+        
+        state['status'] = 'SUCCESS'
     
-    # Make it executable (cross-platform fallback)
-    try:
-        os.chmod(allrun_path, 0o755)
-    except: pass
-    
-    state['status'] = 'SUCCESS'
     return state
 
 def reviewer_node(state: SimulationState) -> SimulationState:

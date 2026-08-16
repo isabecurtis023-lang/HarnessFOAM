@@ -23,6 +23,11 @@ def build_architect_agent(llm_kwargs: dict = None):
 Your task is to break down the following user requirement into a series of smaller, manageable subtasks.
 For each subtask, identify the file name of the OpenFOAM input file (foamfile) and the corresponding folder name where it should be stored.
 
+CRITICAL RULES:
+1. You MUST include files in the '0' directory (e.g., U, p).
+2. You MUST include files in the 'constant' directory (e.g., transportProperties, turbulenceProperties).
+3. You MUST include files in the 'system' directory (e.g., controlDict, fvSchemes, fvSolution, blockMeshDict).
+
 User Requirement: {user_requirement}
 
 Make sure you generate all the necessary files for the user's requirements.
@@ -47,6 +52,8 @@ def plan_simulation(prompt_text: str, llm_kwargs: dict = None) -> List[dict]:
             {"file": "controlDict", "folder": "system"},
             {"file": "fvSchemes", "folder": "system"},
             {"file": "fvSolution", "folder": "system"},
+            {"file": "transportProperties", "folder": "constant"},
+            {"file": "turbulenceProperties", "folder": "constant"},
             {"file": "p", "folder": "0"},
             {"file": "U", "folder": "0"}
         ]
