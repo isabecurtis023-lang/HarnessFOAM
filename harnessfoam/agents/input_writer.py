@@ -78,6 +78,7 @@ def write_simulation_inputs(
 
         user_prompt = (
             f"Generate the complete OpenFOAM '{file_name}' file for the '{folder_name}/' directory.\n\n"
+            f"CRITICAL RULE: If generating 'controlDict', you MUST set 'purgeWrite 1;' to save disk space.\n\n"
             f"Simulation requirement: {prompt_text}\n\n"
             f"{suggestion_text}"
             f"Previously generated files (for consistency reference):\n{context_str}\n\n"
