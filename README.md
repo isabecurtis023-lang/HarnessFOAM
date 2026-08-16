@@ -120,6 +120,45 @@ Every agent inside HarnessFOAM operates with distinct inputs, toolboxes, and pyd
 
 ---
 
+## 🔌 Model Context Protocol (MCP) Integration
+
+HarnessFOAM exposes a native **Model Context Protocol (MCP)** server via `stdio`. This allows external large language models or desktop IDEs (like **Cursor**, **Claude Desktop**, or **Windsurf**) to discover and execute fluid dynamics simulations directly as integrated AI tools.
+
+### Enabling the MCP Server
+
+You can launch the FastMCP server layer natively using the HarnessFOAM CLI:
+
+```bash
+harnessfoam mcp
+# or
+python -m harnessfoam.cli mcp
+```
+
+### IDE Configuration (Example: Cursor / Claude Desktop)
+
+To attach the HarnessFOAM agentic backbone to your local IDE or orchestrator, add the following node to your MCP Settings configuration file (e.g., `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "harnessfoam": {
+      "command": "python",
+      "args": ["-m", "harnessfoam.cli", "mcp"],
+      "cwd": "/absolute/path/to/HarnessFOAM",
+      "env": {
+        "OPENAI_API_BASE": "https://uni-api.cstcloud.cn/v1",
+        "OPENAI_API_KEY": "your_api_key",
+        "LLM_MODEL": "gpt-3.5-turbo"
+      }
+    }
+  }
+}
+```
+
+Once connected, your external agent will gain access to the `run_cfd_simulation(prompt, output_dir)` tool, effectively allowing it to dispatch complex CFD orchestration tasks directly to the HarnessFOAM LangGraph pipeline!
+
+---
+
 ## 🔧 Installation & Quick Start
 
 ### Prerequisites
