@@ -33,6 +33,7 @@ class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
             pass
 
     def on_llm_new_token(self, token: str, **kwargs):
+        print("TOKEN:", repr(token)) # DEBUG
         try:
             asyncio.run_coroutine_threadsafe(
                 self.websocket.send_json({
@@ -681,11 +682,17 @@ echo "Simulation complete!"
             await websocket.send_json({"type": "step", "agent": "Visualizer Agent", "message": "Analyzing prompt and generating PyVista script..."})
             
             from harnessfoam.agents.visualizer import generate_visualization_script
-            viz_results = generate_visualization_script(post_prompt or "Visualize the flow field", llm_kwargs=llm_kwargs)
+            
+            import asyncio
+            import functools
+            loop = asyncio.get_running_loop()
+            func = functools.partial(generate_visualization_script, post_prompt or "Visualize the flow field", llm_kwargs=llm_kwargs)
+            # Run in executor so it doesn't block the async event loop, allowing websocket tokens to stream
+            viz_results = await loop.run_in_executor(None, func)
+            
             pyvista_script = viz_results.get('pyvista_script', '')
             
             import sys
-            import os
             script_path = os.path.join(cwd, "viz_postprocess.py")
             if not pyvista_script:
                 await websocket.send_json({"type": "error", "message": "Visualizer Agent failed to generate a script."})
