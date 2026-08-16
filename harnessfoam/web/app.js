@@ -904,7 +904,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     streamContainer.removeAttribute("id"); // finalize it
                 }
             } else if (data.type === "openfoam_log") {
-                appendOpenFOAMLog(data.message, data.is_error);
+                const openfoamLogsOutput = document.getElementById("openfoam-logs-output");
+                if (openfoamLogsOutput) {
+                    const div = document.createElement("div");
+                    div.className = "log-entry" + (data.is_error ? " error" : "");
+                    div.textContent = data.message;
+                    openfoamLogsOutput.appendChild(div);
+                    openfoamLogsOutput.scrollTop = openfoamLogsOutput.scrollHeight;
+                }
             } else if (data.type === "complete") {
                 appendLog(`<span class="info" style="color:#10b981">✨ ${data.message}</span>`);
                 if (data.directory) {

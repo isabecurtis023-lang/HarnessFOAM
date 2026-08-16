@@ -64,16 +64,16 @@ def execute_visualization(case_dir: str, pyvista_script: str) -> str:
         f.write(pyvista_script)
         
     try:
-        # Mock execution for safety/demonstration if PyVista is not installed on host
-        # In a real environment, this would run `python viz_postprocess.py`
-        # subprocess.run(["python", "viz_postprocess.py"], cwd=case_dir, check=True)
+        import shutil
+        import os
+        python_exe = "python3" if shutil.which("python3") else "python"
         
-        # We will generate a mock image just to prove the pipeline works end-to-end
-        from PIL import Image, ImageDraw
-        img = Image.new('RGB', (800, 600), color = (73, 109, 137))
-        d = ImageDraw.Draw(img)
-        d.text((300,300), "HarnessFOAM Render\n(PyVista Output Mock)", fill=(255,255,0))
-        img.save(img_path)
+        # In a real environment, this would run `python viz_postprocess.py`
+        # PyVista in headless Linux (like WSL) usually requires xvfb
+        if shutil.which("xvfb-run") and os.name == "posix":
+            subprocess.run(["xvfb-run", "-a", python_exe, "viz_postprocess.py"], cwd=case_dir, check=True)
+        else:
+            subprocess.run([python_exe, "viz_postprocess.py"], cwd=case_dir, check=True)
         
         if os.path.exists(img_path):
             with open(img_path, "rb") as image_file:
