@@ -548,6 +548,44 @@
         </section>
 
         <section>
+            <h2>🧪 Verified Automation Pipeline</h2>
+            <div class="workflow-grid">
+                <div class="workflow-card">
+                    <div class="step-num">1</div>
+                    <h3>RAG Context</h3>
+                    <p>Architect and Input Writer receive canonical OpenFOAM solver, boundary, mesh, and runtime guidance.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">2</div>
+                    <h3>Preflight</h3>
+                    <p>Required files, FoamFile headers, solver dependencies, and mesh/field patch consistency are checked before execution.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">3</div>
+                    <h3>checkMesh</h3>
+                    <p>Mesh topology and geometry are validated before the solver is launched.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">4</div>
+                    <h3>Runtime Metrics</h3>
+                    <p>Residuals, continuity errors, Courant numbers, time steps, and completion markers are parsed automatically.</p>
+                </div>
+                <div class="workflow-card">
+                    <div class="step-num">5</div>
+                    <h3>Post-Process</h3>
+                    <p>Deep Driving automatically calls the Visualizer Agent and returns a PyVista result image.</p>
+                </div>
+            </div>
+            <div class="code-container" style="margin-top: 2rem;">
+                <div class="code-header"><span>Current smoke verification</span><span>icoFoam / cavity</span></div>
+                <div class="code-line">Preflight: <span class="command">PASSED</span></div>
+                <div class="code-line">Mesh: <span class="command">400 cells / checkMesh OK</span></div>
+                <div class="code-line">Runtime: <span class="command">501 time steps / max Co 0.170424</span></div>
+                <div class="code-line">Post-process: <span class="command">visualization.png generated</span></div>
+            </div>
+        </section>
+
+        <section>
             <h2>🌟 Visionary Future Roadmap</h2>
             <div class="roadmap-timeline">
                 
