@@ -1,4 +1,9 @@
 import argparse
+import os
+import warnings
+os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+warnings.filterwarnings('ignore')
 import asyncio
 from rich.console import Console
 from rich.panel import Panel
