@@ -191,9 +191,18 @@ echo "Simulation complete!"
         except:
             pass
 
+        # Determine the correct shell executor based on OS
+        import shutil
+        if shutil.which("wsl"):
+            cmd = ["wsl", "sh", "./Allrun"]
+        elif shutil.which("bash"):
+            cmd = ["bash", "./Allrun"]
+        else:
+            cmd = ["sh", "./Allrun"]
+
         try:
             process = subprocess.Popen(
-                ["sh", "./Allrun"],
+                cmd,
                 cwd=state['case_dir'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
