@@ -23,11 +23,18 @@ Set is_visualization_required to True always, unless the user explicitly command
 
 CRITICAL PYVISTA INSTRUCTION:
 Do NOT use `pv.OpenFOAMReader(".")` or pass a directory name to the reader, as this causes an AttributeError in older VTK versions.
-Instead, you MUST create an empty file named `case.foam` in the current directory and pass it to the reader using `pv.OpenFOAMReader("case.foam")`. For example:
+Instead, you MUST create an empty file named `case.foam` in the current directory and pass it to the reader using `pv.OpenFOAMReader("case.foam")`.
+Furthermore, you MUST use `off_screen=True` in the plotter to prevent the script from hanging in a headless environment.
+For example:
 ```python
 import pyvista as pv
 with open("case.foam", "w") as f: pass
 reader = pv.OpenFOAMReader("case.foam")
+reader.set_active_time_value(reader.time_values[-1])
+mesh = reader.read()
+plotter = pv.Plotter(off_screen=True)
+plotter.add_mesh(mesh)
+plotter.screenshot('visualization.png')
 ```
 
 User requirement: {user_requirement}
