@@ -13,6 +13,7 @@ load_dotenv()
 def write_simulation_inputs(
     plan: List[Dict[str, str]],
     prompt_text: str,
+    case_dir: str = "",
     llm_kwargs: dict = None
 ) -> Dict[str, str]:
     """
@@ -27,6 +28,27 @@ def write_simulation_inputs(
         file_name   = item['file']
         folder_name = item['folder']
         path        = f"{folder_name}/{file_name}"
+        
+        full_path = ""
+        if case_dir:
+            full_path = os.path.join(case_dir, path.lstrip("/\\"))
+            
+        # Check if file already exists and is valid
+        skip_generation = False
+        if full_path and os.path.exists(full_path):
+            try:
+                with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                    existing_content = f.read()
+                # Simple heuristic to determine if it's a valid OpenFOAM file
+                if "FoamFile" in existing_content and "Mock OpenFOAM content" not in existing_content:
+                    print(f"Input Writer: SKIP {path} (already exists and valid)", flush=True)
+                    generated_files[path] = existing_content
+                    skip_generation = True
+            except Exception as e:
+                print(f"Input Writer: Failed to read existing {path}: {e}")
+
+        if skip_generation:
+            continue
 
         # Build context from previously generated files (keep short to avoid token bloat)
         context_parts = []

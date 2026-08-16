@@ -83,7 +83,8 @@ def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
     print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
     llm_kwargs = state.get('llm_kwargs') or {}
-    state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'], llm_kwargs=llm_kwargs)
+    case_dir = state.get('case_dir', '')
+    state['logs']['generated_files'] = write_simulation_inputs(state['plan'], state['prompt'], case_dir=case_dir, llm_kwargs=llm_kwargs)
     
     # Write files to disk
     import os
