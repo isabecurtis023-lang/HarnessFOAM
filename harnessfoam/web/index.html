@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=5">
+    <link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 <body>
     <div class="app-container">
@@ -41,14 +41,14 @@
                 </div>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+            <div class="action-grid">
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Stack buttons vertically, always show Run OpenFOAM -->
-                <button id="run-btn" class="primary-btn" style="width: 100%; margin-top: 0;">Deep driving</button>
-                <button id="run-openfoam-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #10b981;">Run OpenFOAM</button>
+                <button id="run-btn" class="primary-btn">Deep driving</button>
+                <button id="run-openfoam-btn" class="primary-btn run-openfoam-action">Run OpenFOAM</button>
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Add Post-Process button, disabled by default -->
-                <button id="postprocess-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Post-Process</button>
+                <button id="postprocess-btn" class="primary-btn postprocess-action" disabled>Post-Process</button>
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Always show Stop button, disabled by default -->
-                <button id="stop-btn" class="primary-btn" style="width: 100%; margin-top: 0; background-color: #4b5563; cursor: not-allowed;" disabled>Stop</button>
+                <button id="stop-btn" class="primary-btn stop-action" disabled>Stop</button>
             </div>
 
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; gap: 0.5rem;">
@@ -214,6 +214,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=21"></script>
+    <script src="/static/app.js?v=22"></script>
 </body>
 </html>

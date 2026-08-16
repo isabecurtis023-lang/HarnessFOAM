@@ -46,9 +46,29 @@ body {
     padding: 2rem;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
     border-right: 1px solid rgba(255, 255, 255, 0.05);
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+.action-grid .primary-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.65rem;
+    margin-top: 0;
+    padding: 0.65rem 0.45rem;
+    font-size: 0.78rem;
+}
+.action-grid .run-openfoam-action { background-color: #10b981; }
+.action-grid .postprocess-action,
+.action-grid .stop-action { background-color: #4b5563; cursor: not-allowed; }
 
 /* 2026-08-15 – Gemini 3.5 Flash: Sidebar collapse toggle button and state styles */
 .toggle-cp-btn {
