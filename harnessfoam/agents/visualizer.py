@@ -27,7 +27,8 @@ Instead, you MUST create an empty file named `case.foam` in the current director
 Furthermore, you MUST use `off_screen=True` in the plotter to prevent the script from hanging in a headless environment.
 CRITICAL OPENFOAM MULTIBLOCK INSTRUCTION:
 The `reader.read()` method returns a `pyvista.MultiBlock` dataset. OpenFOAM fields like 'U' or 'p' are NOT block names, they are array scalars inside the blocks (typically inside the `internalMesh` block).
-Do NOT attempt to extract arrays via `mesh['U']`. Instead, pass the multiblock mesh directly to the plotter and specify the scalar name: `plotter.add_mesh(mesh, scalars='U')`.
+Do NOT attempt to extract arrays via `mesh['U']`. Do NOT iterate over the blocks. Do NOT use `block.array_names`.
+Instead, pass the multiblock mesh DIRECTLY to the plotter and specify the scalar name: `plotter.add_mesh(mesh, scalars='U')`.
 For example:
 ```python
 import pyvista as pv
