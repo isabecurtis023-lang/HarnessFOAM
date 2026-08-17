@@ -100,7 +100,7 @@
                         <label for="model_name">Model Name</label>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <select id="model_name" style="flex: 1; padding: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px;">
-                                <!-- 2026-08-15 – Claude Opus 4.6: updated to actual 科技云 models -->
+                                <!-- 2026-08-15 – Claude Opus 4.6: updated to actual TechCloud models -->
                                 <option value="deepseek-v4-flash">deepseek-v4-flash</option>
                                 <option value="deepseek-v3.2">deepseek-v3.2</option>
                                 <option value="qwen3.5">qwen3.5</option>
@@ -196,7 +196,7 @@
             </div>
             <div class="assistant-repair-card">
                 <div class="assistant-repair-title">Recovery workflow</div>
-                <div class="assistant-repair-hint">分析故障、预览修改，确认后再回归运行 cavity。</div>
+                <div class="assistant-repair-hint">Analyze errors, preview fixes, and confirm before re-running the simulation.</div>
                 <div class="assistant-repair-actions">
                     <button id="assistant-repair-preview" class="secondary-btn">Analyze &amp; Preview</button>
                     <button id="assistant-repair-apply" class="primary-btn" disabled>Confirm Fix</button>
@@ -227,6 +227,7 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/static/app.js?v=25"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <script src="/static/app.js?v=26"></script>
 </body>
 </html>

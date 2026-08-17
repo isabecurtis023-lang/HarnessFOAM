@@ -86,9 +86,9 @@ def assistant_command(message: str, *, output_dir: str = "tmp_assistant_cavity")
     """Handle safe deterministic commands before delegating explanatory chat to the LLM."""
     text = (message or "").strip()
     lower = text.lower()
-    if lower in {"/test", "/tests", "运行测试", "run tests"}:
+    if lower in {"/test", "/tests", "run tests"}:
         return {"tool": "run_unit_tests", "result": run_unit_tests()}
-    if lower in {"/benchmark cavity", "run cavity benchmark", "运行 cavity benchmark", "运行cavity算例"}:
+    if lower in {"/benchmark cavity", "run cavity benchmark", "run cavity case"}:
         return {"tool": "run_cavity_benchmark", "result": run_cavity_benchmark(output_dir)}
     if lower.startswith("/search "):
         return {"tool": "search_files", "result": {"results": search_files(text[8:].strip())}}

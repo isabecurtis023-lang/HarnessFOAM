@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
-from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
 from harnessfoam.knowledge import format_context
 
 # Load environment variables from .env if present
@@ -43,23 +42,7 @@ Make sure you generate all the necessary files for the user's requirements.
     return chain
 def plan_simulation(prompt_text: str, llm_kwargs: dict = None, memory_context: str = "") -> List[dict]:
     """Execute the architect agent to get a structured plan."""
-    try:
-        chain = build_architect_agent(llm_kwargs=llm_kwargs)
-        enriched_prompt = f"{prompt_text}\n\nCanonical retrieved OpenFOAM guidance:\n{format_context(prompt_text, k=5, route='architect')}" + memory_context
-        result = chain.invoke({"user_requirement": enriched_prompt})
-        return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]
-    except Exception as e:
-        print(f"Architect Agent failed (possibly due to API/Key issues): {e}")
-        print("Falling back to default plan...")
-        if is_cavity_prompt(prompt_text):
-            return [{"file": path.rsplit("/", 1)[1], "folder": path.split("/", 1)[0]} for path in cavity_files()]
-        return [
-            {"file": "blockMeshDict", "folder": "system"},
-            {"file": "controlDict", "folder": "system"},
-            {"file": "fvSchemes", "folder": "system"},
-            {"file": "fvSolution", "folder": "system"},
-            {"file": "physicalProperties", "folder": "constant"},
-            {"file": "turbulenceProperties", "folder": "constant"},
-            {"file": "p", "folder": "0"},
-            {"file": "U", "folder": "0"}
-        ]
+    chain = build_architect_agent(llm_kwargs=llm_kwargs)
+    enriched_prompt = f"{prompt_text}\n\nCanonical retrieved OpenFOAM guidance:\n{format_context(prompt_text, k=5, route='architect')}" + memory_context
+    result = chain.invoke({"user_requirement": enriched_prompt})
+    return [{"file": item.file_name, "folder": item.folder_name} for item in result.subtasks]

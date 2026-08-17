@@ -1,10 +1,10 @@
 import os
-from typing import Dict
+from harnessfoam.core.database import create_run, update_run_state, get_run, init_db
 import shutil
 from mcp.server.fastmcp import FastMCP
 
 app = FastMCP("HarnessFOAM-MCP")
-_jobs: Dict[str, dict] = {}
+init_db()
 
 # Tools definitions
 @app.tool()
@@ -13,7 +13,8 @@ async def create_case(user_prompt: str) -> dict:
     case_id = "case_" + os.urandom(4).hex()
     case_dir = os.path.abspath(os.path.join("mcp_cases", case_id))
     os.makedirs(case_dir, exist_ok=True)
-    _jobs[case_id] = {"case_id": case_id, "case_dir": case_dir, "prompt": user_prompt, "status": "CREATED", "logs": {}}
+    initial_state = {"case_id": case_id, "case_dir": case_dir, "prompt": user_prompt, "status": "CREATED", "logs": {}}
+    create_run(case_id, case_dir, user_prompt, initial_state)
     return {"case_id": case_id, "case_dir": case_dir, "status": "CREATED"}
 
 from harnessfoam.agents.architect import plan_simulation
@@ -62,27 +63,27 @@ async def run_simulation(case_id: str, environment: str) -> dict:
     callers receive an explicit status instead of a fabricated SUCCESS.
     """
     job_id = f"run_{case_id}"
-    job = _jobs.get(case_id)
+    job = get_run(case_id)
     if not job:
         return {"job_id": job_id, "status": "FAILED", "error": "Unknown case_id"}
     if environment.lower() not in ("local", "native", "wsl", "auto"):
-        job.update(status="UNSUPPORTED", error="Remote/HPC execution is not enabled")
+        update_run_state(case_id, {"status": "UNSUPPORTED", "error": "Remote/HPC execution is not enabled"})
         return {"job_id": job_id, "status": job["status"], "error": job["error"]}
     workflow = __import__("harnessfoam.agents.graph", fromlist=["create_workflow", "SimulationState"])
     graph = workflow.create_workflow()
     state = workflow.SimulationState(user_requirement=job["prompt"], case_dir=job["case_dir"], max_errors=3)
     try:
         final_state = await graph.ainvoke(state)
-        job.update(status=final_state.get("status", "UNKNOWN"), logs=final_state.get("logs", {}), state=final_state)
+        update_run_state(case_id, {"status": final_state.get("status", "UNKNOWN"), "logs": final_state.get("logs", {}), "state": final_state})
     except Exception as exc:
-        job.update(status="FAILED", logs={"execution_error": str(exc)})
+        update_run_state(case_id, {"status": "FAILED", "logs": {"execution_error": str(exc)}})
     return {"job_id": job_id, "status": job["status"], "case_id": case_id, "metrics": job["logs"].get("runtime_metrics", {})}
 
 @app.tool()
 async def check_job_status(job_id: str) -> dict:
     """Checks the status of any asynchronous job (meshing, simulation, visualization)."""
     case_id = job_id.removeprefix("run_")
-    job = _jobs.get(case_id)
+    job = get_run(case_id)
     if not job:
         return {"status": {"state": "UNKNOWN", "error": "Unknown job_id"}}
     return {"status": {"state": job.get("status", "UNKNOWN"), "case_id": case_id, "metrics": job.get("logs", {}).get("runtime_metrics", {})}}
@@ -90,7 +91,7 @@ async def check_job_status(job_id: str) -> dict:
 @app.tool()
 async def get_simulation_logs(case_id: str, job_id: str) -> dict:
     """Retrieves detailed logs for a failed job to enable error diagnosis."""
-    job = _jobs.get(case_id, {})
+    job = (get_run(case_id) or {})
     return {"logs": job.get("logs", {})}
 
 @app.tool()
@@ -103,7 +104,7 @@ async def review_and_suggest_fix(case_id: str, logs: dict) -> dict:
 @app.tool()
 async def apply_fix(case_id: str, modifications: list) -> dict:
     """Apply content patches safely, preserving a backup for every file."""
-    job = _jobs.get(case_id)
+    job = get_run(case_id)
     if not job:
         return {"status": "FAILED", "error": "Unknown case_id"}
     case_dir = os.path.abspath(job["case_dir"])
@@ -138,8 +139,9 @@ async def apply_fix(case_id: str, modifications: list) -> dict:
         applied.append(os.path.relpath(target, case_dir).replace("\\", "/"))
     if errors:
         return {"status": "FAILED", "applied": applied, "errors": errors}
-    job["status"] = "FIX_APPLIED"
-    job["logs"] = {**job.get("logs", {}), "mcp_fix_backup": backup_dir, "mcp_fix_files": applied}
+    logs = job.get("logs", {})
+    logs.update({"mcp_fix_backup": backup_dir, "mcp_fix_files": applied})
+    update_run_state(case_id, {"status": "FIX_APPLIED", "logs": logs})
     return {"status": "REQUIRES_WORKFLOW_RETRY", "applied": applied, "backup_dir": backup_dir, "message": "Fix applied; run the case again to re-run preflight and solver validation."}
 
 @app.tool()

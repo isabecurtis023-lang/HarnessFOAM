@@ -57,4 +57,4 @@ boundaryField { movingWall { type fixedValue; value uniform (1 0 0); } fixedWall
 
 def is_cavity_prompt(prompt: str) -> bool:
     text = (prompt or "").lower()
-    return any(x in text for x in ("cavity", "lid driven", "lid-driven", "方腔", "顶盖驱动"))
+    return any(x in text for x in ("cavity", "lid driven", "lid-driven", "square cavity"))

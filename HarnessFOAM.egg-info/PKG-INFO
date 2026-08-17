@@ -5,6 +5,7 @@ Summary: An End-to-End Composable Multi-Agent Framework for Automating CFD Simul
 Author: Isabel Curtis
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
+Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: langgraph>=0.0.26
 Requires-Dist: langchain>=0.1.0
@@ -19,83 +20,296 @@ Provides-Extra: dev
 Requires-Dist: pytest>=7.0; extra == "dev"
 Requires-Dist: pytest-asyncio; extra == "dev"
 Requires-Dist: black>=23.0; extra == "dev"
-
-<div align="center">
+Dynamic: requires-python
 
 # HarnessFOAM 🌊
 
-**An End-to-End Composable Multi-Agent Framework for Automating CFD Simulation in OpenFOAM**
+<div align="center">
 
+<img src="assets/harnessfoam-horse.png" alt="HarnessFOAM running horse logo" width="320">
+
+**An End-to-End Composable Multi-Agent Framework for Autonomous CFD Simulations in OpenFOAM.**
+<br>
+*Powered by LangGraph, the Model Context Protocol (MCP), and Vision-Language Models.*
 ![Architecture Diagram](assets/harnessfoam_architecture.jpg)
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://python.org)
-[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-Compatible-darkgreen)](https://openfoam.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://python.org) 
+[![OpenFOAM](https://img.shields.io/badge/OpenFOAM-Compatible-darkgreen)](https://openfoam.org/) 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
 
+---
+
 ## 🚀 Overview
 
-Computational Fluid Dynamics (CFD) is an essential tool in engineering but suffers from a steep learning curve and laborious manual setup. **HarnessFOAM** introduces a revolutionary multi-agent framework that fully automates the end-to-end OpenFOAM workflow from a single natural language prompt. 
+Computational Fluid Dynamics (CFD) is critical to modern engineering, but the steep learning curve, complex mesh generation, and intricate text-based solver setup in OpenFOAM make it highly labor-intensive. 
 
-Powered by **LangGraph** and integrating seamlessly with any Model Context Protocol (MCP) compatible interface, HarnessFOAM delegates complex CFD tasks to a collaborative network of specialized AI agents. It features a premium real-time Web UI, auto-installation of OpenFOAM, and direct physical execution of simulation and visualization.
+**HarnessFOAM** solves this by introducing a modular, composable multi-agent framework built on **LangGraph**. It completely automates the entire end-to-end CFD lifecycle from a single natural-language request (e.g., *"Simulate incompressible flow over a circular cylinder at 2 m/s"*). 
 
-### 🔥 Key Innovations
-
-1. **Comprehensive End-to-End Automation**: Manages the complete pipeline including geometry/meshing, solver configuration, physical HPC/local execution, and dynamic post-processing visualization (via `PyVista`).
-2. **Premium Enterprise Web UI**: A stunning, zero-dependency HTML/JS frontend powered by FastAPI. Track 6 AI agents reasoning in real-time, modify API parameters on the fly, and view generated physics plots directly in your browser.
-3. **Multi-Modal VLM Physics Review**: The Reviewer agent hooks into Vision-Language Models (VLM) like `gpt-4o` to visually inspect rendered physics plots (e.g. boundary layer detachment) and autonomously self-correct unphysical simulation behaviors.
-4. **Universal LLM Compatibility**: Seamlessly switch between OpenAI, Anthropic, DeepSeek, or MiniMax through dynamic Web UI configurations.
-5. **Zero-Barrier Environment Setup**: Intelligent `installer.py` automatically detects host OS and provisions OpenFOAM via Docker or system packages seamlessly.
+The platform offers a premium real-time Web User Interface, automatic environment provisioning (WSL/Docker/Native), a multi-agent orchestration pipeline, and automated visualization post-processing.
 
 ---
 
-## 🤖 The 6-Agent AI Architecture
+## 🖥️ Web User Interface
 
-The intelligence of HarnessFOAM is distributed across 6 specialized agents, dynamically orchestrated by LangGraph:
+HarnessFOAM includes a state-of-the-art, zero-dependency HTML/CSS/JS frontend served by a FastAPI backend. The UI is thoughtfully divided into four distinct interactive zones to streamline the CFD workflow:
 
-1. **Architect Agent** (`architect.py`): Interprets user queries and plans the hierarchical file and folder structure.
-2. **Meshing Agent** (`meshing.py`): Converts external `.msh` files or dynamically generates Python-based `gmsh` scripts for complex 2D/3D domains.
-3. **Input Writer Agent** (`input_writer.py`): Generates domain-specific configuration files (`0/U`, `system/controlDict`, `constant/physicalProperties`).
-4. **Runner Agent** (`runner.py`): Physically executes the OpenFOAM solver locally capturing real standard out, or constructs a `Slurm` script for High-Performance Computing (HPC) clusters.
-5. **Reviewer Agent** (`reviewer.py`): Diagnoses physical execution errors from raw logs and visually analyzes PyVista plots using VLMs to iteratively propose corrections.
-6. **Visualizer Agent** (`visualizer.py`): Accepts dynamic post-processing requirements, writes automated `PyVista` scripts, physically executes them, and pushes base64 renders back to the Web UI.
+![HarnessFOAM Web UI](assets/web_ui_screenshot.png)
+
+### 1. 🎛️ Control Panel (Left Sidebar)
+The main command center for configuring and triggering simulations.
+* **Simulation Requirement**: A text area to input natural language physical setups (e.g., "Simulate incompressible flow...").
+* **Post-Processing Requirement**: A text area to define custom data visualization instructions.
+* **Project Output Directory**: Displays the current workspace. Includes a **Browse...** button to easily select working directories. It features automatic path memory via local storage.
+* **Execution Buttons**:
+  * **Deep driving** (Blue): Initiates the LLM-driven multi-agent workflow to generate all necessary OpenFOAM configuration dictionaries based on the prompt.
+  * **Run OpenFOAM** (Green): Executes the actual OpenFOAM solver pipeline (e.g., `blockMesh`, `snappyHexMesh`, `simpleFoam`) locally or via WSL/Docker.
+  * **Post-Process** (Purple): Triggers the visualizer agent to generate and render 3D plots (e.g., velocity/pressure fields) via PyVista.
+  * **Stop** (Red): Safely cancels any ongoing backend execution.
+* **Status Indicators**: Real-time dots showing OpenFOAM environment readiness, LLM API connection status, backend WebSocket connection, and UI uptime.
+* **⚙️ Setting**: Opens a modal to configure API parameters (Base URL, API Key, Model Selection) on the fly without restarting the server.
+
+### 2. 📁 File Explorer (Inner Left Sidebar)
+A live directory viewer providing instant visibility into the simulation setup.
+* Automatically refreshes upon generation completion to display the full OpenFOAM hierarchy (`0/`, `constant/`, `system/`).
+* Provides quick actions to create, rename, delete, or copy files and folders.
+* Clicking on any file instantly opens it in the **File Viewer** tab in the main workspace for quick inspection or manual modification.
+
+### 3. 💻 Main Workspace (Center Area)
+The primary execution context, split into tabbed views:
+* **Console Tab**: A rich terminal interface that streams real-time, color-coded execution logs. It displays step-by-step reasoning from different agents (e.g., `[Architect Agent]`, `[Meshing Agent]`), execution outputs, error traces, and rendered inline image plots from post-processing.
+* **File Viewer Tab**: An integrated lightweight text editor that allows users to instantly read, modify, and save OpenFOAM dictionary files (like `controlDict` or `fvSchemes`) without leaving the browser.
+
+### 4. ✨ AI Assistant (Right Sidebar)
+An integrated conversational AI helper overlay.
+* Features a dedicated chat interface independent of the main generation workflow.
+* Allows users to query the assistant for help on CFD physics, OpenFOAM syntax, or to ask for optimization suggestions based on the current context.
+* Supports selecting specific reasoning models via a dropdown and tracks token usage.
+* The settings dialog includes an opt-in **agent memory and self-improvement** switch. When enabled, each agent gets a local `.harnessfoam/memory/<agent>.md` document with an independent token budget; full documents are compressed automatically. It is off by default.
+* Framework-scoped assistant tools support repository search, file reading, and explicit-confirmation patches. Writes are confined to the repository root and can be reviewed as a diff before applying.
+* `/api/assistant/github-feedback` can prepare or, after explicit confirmation, create a GitHub Issue or Pull Request through the local `gh` CLI. The assistant never publishes silently.
+* Assistant tool commands include `/test`, `/benchmark cavity`, `/search <query>`, `/read <path>`, and `/log <path>`; the corresponding API endpoints are `/api/assistant/tests`, `/api/assistant/cavity`, `/api/assistant/search`, `/api/assistant/read`, and `/api/assistant/log`. `/api/assistant/memory` exposes opt-in memory snapshots, and `/api/assistant/memory/clear` requires explicit confirmation before deletion.
+
+The File Explorer keeps **Parameter Optimization** directly above the project tree, so a sweep is part of the same project workspace. The restored status bar reports environment, OpenFOAM, LLM, knowledge, connection, and uptime independently; a green status means the check completed successfully, not that every optional dependency is present.
+
+---
+
+## 🔄 Composable Multi-Agent Workflow
+
+The system is coordinated via a LangGraph state graph that passes a shared `SimulationState` context dictionary among specialized agents:
+
+```mermaid
+graph TD
+    A[User Requirement] --> B[Architect Agent]
+    B --> C[Meshing Agent]
+    C --> D[Input Writer Agent]
+    D --> E[Preflight Validator]
+    E --> F{Consistent?}
+    F -- No --> G[Reviewer Agent]
+    G --> D
+    F -- Yes --> H[checkMesh + Runner]
+    H --> I{Runtime metrics valid?}
+    I -- No --> G
+    I -- Yes --> J[Visualizer Agent]
+    J --> K[End]
+```
+
+1. **State Propagation** – A unified `llm_kwargs` dict is sent across all agents, ensuring runtime model overrides (e.g. `gpt-4o`, `claude-3-5-sonnet`, `gemini-2.5-pro`, `deepseek-v4-flash`, `minimax-m27`, `qwen3.5`) are consistently respected.
+2. **Retrieval-Augmented Generation** – Architect and Input Writer receive offline canonical OpenFOAM guidance for solver selection, boundary consistency, 2-D meshes, pressure references, mesh quality and runtime checks.
+3. **Deterministic Preflight** – Generated dictionaries are checked for required files, FoamFile headers, placeholder content, solver-specific dependencies and patch-name consistency before any solver starts.
+4. **Runtime Validation** – `checkMesh` runs before the solver. Logs are parsed for residuals, continuity errors, Courant numbers, time-step count and completion markers.
+5. **Bounded Error Feedback** – Validation failures are routed to Reviewer. Target files are identified deterministically when possible, and overwritten files are backed up under `.harnessfoam/backups/`.
+6. **OpenFOAM 13 Runtime Contract** – Each generated case receives `.harnessfoam/manifest.json`; solver logs must confirm OpenFOAM Version 13 before the run is accepted.
+7. **Structured Post-Processing** – Visualizer output is accompanied by machine-readable readers for `forceCoeffs.dat` and `forces.dat` when those function-object outputs exist.
+8. **Visual Review Boundary** – The Visual Reviewer is invoked after rendering. A failed VLM review re-enters the bounded Reviewer loop; an unavailable vision model is reported as `SKIPPED`, never as a false pass.
+9. **Dependency-Aware Generation and Failure Ledger** – Structural dictionaries are generated before fields, and each bounded retry records its error and repair suggestions in `.harnessfoam/failure_ledger.jsonl` for reproducible debugging and later evaluation.
+10. **Role-Routed RAG** – Architect, Input Writer and Reviewer receive different retrieval facets for physics/solver selection, dictionary syntax and troubleshooting rather than sharing one flat query.
+
+The repository also exposes `harnessfoam.benchmark.run_cavity_smoke(output_dir)` as an LLM-free OpenFOAM 13 regression smoke test. It generates the deterministic cavity case, runs `blockMesh → checkMesh → icoFoam`, verifies the Version 13 banner and checks the written velocity field for finite values and a physically plausible moving-lid magnitude.
+For cavity prompts, the workflow also applies a versioned reference gate covering final time, Courant number, continuity error, finite velocity and moving-lid velocity. The gate returns a score and named failed checks instead of treating solver exit code alone as correctness.
+Bounded parameter sweeps are available through `harnessfoam.optimization.run_parameter_sweep`, the Web API `/api/optimize`, and MCP `run_parameter_optimization`. Each candidate is isolated in its own directory, patched only at declared dictionary keys, executed with the OpenFOAM 13 runtime contract, ranked by a declared objective (`max` or `min`), and returned with a grouped parameter sensitivity summary.
+Every sweep also returns an evaluation report with total/pass/fail counts, success rate, objective range, and grouped failure types so benchmark claims can be reproduced from machine-readable output.
+The deterministic Python validation suite runs on every push and pull request through `.github/workflows/ci.yml`; OpenFOAM 13 runtime smoke tests remain available through `harnessfoam.benchmark.run_cavity_smoke` on a configured WSL host.
+The official tutorial regression registry in `harnessfoam.tutorial_regression` covers `cavity`, `pitzDaily`, `damBreak`, and `shockTube`; it copies each case into an isolated WSL directory and applies the same OpenFOAM 13 runtime gate.
+
+### Verified benchmark matrix
+
+The repository contains deterministic checks for all three interfaces:
+
+| Interface | Coverage | Result in the OpenFOAM 13 WSL environment |
+| --- | --- | --- |
+| CLI/Python | cavity smoke + official cavity/pitzDaily/damBreak/shockTube tutorials | Passed |
+| Web API/UI | environment, knowledge, optimization and WebSocket workflow endpoints | Passed |
+| MCP | knowledge status, simulation dispatch and parameter optimization tools | Passed |
+
+Run the local checks with `pytest tests/unit -q`, `python -m compileall -q harnessfoam`, and the tutorial registry from `harnessfoam.tutorial_regression`. A configured LLM is still required for non-fallback generation; the cavity benchmark remains LLM-free and reproducible.
+
+The CLI exposes the same deterministic tutorial gate with `python -m harnessfoam.cli benchmark --tutorial all --report benchmark_report.json`. Assistant-triggered test execution is repository-scoped and returns machine-readable `PASSED`/`FAILED` output; patch application always returns a unified diff before requiring confirmation. The cavity repair benchmark intentionally breaks `0/U`, locates the patch mismatch, previews/applies a fix, reruns preflight, and can execute the OpenFOAM 13 smoke solver.
+
+---
+
+## 🤖 Deep-Dive: The 6 AI Agents
+
+Every agent inside HarnessFOAM operates with distinct inputs, toolboxes, and pydantic structured formats:
+
+### 1. Architect Agent (`architect.py`)
+* **Role**: Translates user requirements into a file generation plan.
+* **Output**: A structured list of target files and directories (e.g. `system/blockMeshDict`, `constant/transportProperties`, `0/U`).
+* **Fallback**: Generates a standard set of incompressible Navier-Stokes solver configurations if the LLM fails.
+
+### 2. Meshing Agent (`meshing.py`)
+* **Role**: Analyzes spatial layout requirements to choose the most suitable mesh strategy.
+* **Logic**: Detects if native `blockMeshDict` is sufficient or if complex geometries (e.g., airfoils, cylinders) require custom `gmsh` scripts.
+* **Execution**: Dynamically compiles a Python `gmsh` script, executes it, and converts the mesh output into OpenFOAM format.
+
+### 3. Input Writer Agent (`input_writer.py`)
+* **Role**: Generates raw, valid OpenFOAM dictionaries without formatting fences.
+* **Technology**: Uses a custom **streaming API connection** to handle long generation windows without timing out, combined with aggressive regex filters to clean output and strip `<think>` tags.
+* **Robustness**: Implements connection/read retries with exponential backoffs to deal with unstable API endpoints.
+
+### 4. Runner Agent (`runner.py`)
+* **Role**: Formulates execution command pipelines.
+* **Output**: Writes the standard `./Allrun` executable. For cloud/HPC environments, it automatically outputs optimized Slurm allocation scripts specifying node bounds and parallel processing commands.
+* **Execution**: Manages shell process execution inside native Windows, WSL, or Docker environments.
+
+### 5. Reviewer Agent (`reviewer.py`)
+* **Role**: Analyzes build and runtime logs to repair failing simulations.
+* **Mechanism**: Leverages Large Vision-Language Models (VLMs) to visually review rendered post-processing plots. If flow physics show anomalies (e.g., flow divergence, incorrect boundary reflection), it overrides boundary conditions or decreases step intervals.
+
+### 6. Visualizer Agent (`visualizer.py`)
+* **Role**: Automated post-processing plotting.
+* **Execution**: Compiles python scripts using `PyVista` to load OpenFOAM VTK results, applies contour filters, renders velocity/pressure fields, saves the output to a `.png` file, and streams it back to the client interface.
+
+## ✅ Validation and runtime outputs
+
+Every local Deep Driving run now reports three separate stages:
+
+```text
+Preflight → checkMesh → Solver → Runtime Metrics → Visualizer
+```
+
+The Web UI and MCP response expose:
+
+* `preflight_ok` and deterministic file/patch errors;
+* `runtime_metrics.time_steps` and `runtime_metrics.last_time`;
+* maximum Courant number and continuity error;
+* `postprocess_status` and the generated visualization image.
+* `retry_history`, including each bounded recovery attempt, its error excerpt, suggestions, and whether another retry remains.
+
+The built-in 2-D lid-driven cavity is used as an offline smoke case when the configured LLM is unavailable. Normal operation still calls the LLM from `.env` to generate the case files; the fallback prevents an API outage from producing fake OpenFOAM dictionaries.
+
+---
+
+## 🔌 Model Context Protocol (MCP) Integration
+
+HarnessFOAM exposes a native **Model Context Protocol (MCP)** server via `stdio`. This allows external large language models or desktop IDEs (like **Cursor**, **Claude Desktop**, or **Windsurf**) to discover and execute fluid dynamics simulations directly as integrated AI tools.
+
+### Enabling the MCP Server
+
+You can launch the FastMCP server layer natively using the HarnessFOAM CLI:
+
+```bash
+harnessfoam mcp
+# or
+python -m harnessfoam.cli mcp
+```
+
+### IDE Configuration (Example: Cursor / Claude Desktop)
+
+To attach the HarnessFOAM agentic backbone to your local IDE or orchestrator, add the following node to your MCP Settings configuration file (e.g., `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "harnessfoam": {
+      "command": "python",
+      "args": ["-m", "harnessfoam.cli", "mcp"],
+      "cwd": "/absolute/path/to/HarnessFOAM",
+      "env": {
+        "OPENAI_API_BASE": "your_base_url",
+        "OPENAI_API_KEY": "your_api_key",
+        "LLM_MODEL": "gpt-3.5-turbo"
+      }
+    }
+  }
+}
+```
+
+Once connected, your external agent will gain access to the `run_cfd_simulation(prompt, output_dir)` tool, effectively allowing it to dispatch complex CFD orchestration tasks directly to the HarnessFOAM LangGraph pipeline!
+
+The tool now returns the actual workflow status rather than an unconditional success message. It includes generated files, preflight status, runtime metrics, post-processing status and the latest execution error, if any. The lower-level MCP tools also return `UNKNOWN`, `FAILED` or `UNSUPPORTED` for cases/jobs they cannot execute; they do not fabricate successful job states.
+`apply_fix` now accepts explicit `{path, content}` patches, rejects paths outside the case directory, backs up replaced files under `.harnessfoam/backups/mcp_fix`, and returns `REQUIRES_WORKFLOW_RETRY` so preflight remains the gate before execution.
 
 ---
 
 ## 🔧 Installation & Quick Start
 
+### Prerequisites
+* **Python**: `3.10` or above.
+* **OpenFOAM**: Installed locally or inside WSL. Alternatively, a running Docker daemon. (If missing, the UI installer can automatically provision OpenFOAM inside WSL).
+
+### Setup
 ```bash
-# 1. Clone the repository
+# 1. Clone the project repository
 git clone https://github.com/isabecurtis023-lang/HarnessFOAM.git
 cd HarnessFOAM
 
-# 2. Install Python dependencies and CLI globally
-pip install -e .
+# 2. Install package in editable mode along with dev options
+pip install -e .[dev]
 
-# 3. Launch the Premium Web UI!
+# 3. Create and configure your environment variables
+cp .env.example .env
+```
+
+Ensure your `.env` contains valid OpenAI or compatible (such as CSTCloud) credentials:
+```env
+OPENAI_API_KEY=your_api_key
+OPENAI_API_BASE=your_base_url
+LLM_MODEL=your_model_name
+```
+
+### Launching serves
+```bash
+# Serves the Web Interface on localhost:8000
 harnessfoam serve --host 127.0.0.1 --port 8000
 ```
-Open `http://127.0.0.1:8000` in your browser. If OpenFOAM is not detected, HarnessFOAM will politely ask for permission to install it for you!
-
-You can also run directly from the terminal CLI:
-```bash
-harnessfoam run "Simulate incompressible flow over a circular cylinder at 2 m/s" -o "cylinder_case"
-```
+Open your browser and navigate to `http://127.0.0.1:8000`.
 
 ---
 
-## 🧪 Benchmark & Test Cases
+## 🧪 Benchmarks & Validations
 
-HarnessFOAM is validated against 15 rigorous, paper-grade industrial CFD tests, including 10 advanced multi-physics scenarios:
+### Official tutorial knowledge base
 
-- **Heat Transfer**: Buoyancy-driven flow & turbulent heat plates (`buoyantBoussinesqPimpleFoam`).
-- **Multiphase & Droplets**: Classic Dam Break (`interFoam`).
-- **Combustion & Reacting**: Counter-flow diffusion flames (`reactingFoam`).
-- **Shock Dynamics**: Forward-facing supersonic steps & Sod shock tubes (`rhoCentralFoam`).
-- **Turbulent Aerodynamics**: 3D DrivAer car geometry flows (`simpleFoam`).
+HarnessFOAM now vendors a curated official OpenFOAM tutorial corpus under `assets/openfoam_tutorials/OpenFOAM-13`. The Architect and Input Writer agents retrieve real tutorial dictionary excerpts (including cavity, pitzDaily, motorBike, damBreak, hotRoom and shockTube) as local RAG context when generating configuration files. The index is offline, deterministic and exposed at `/api/knowledge_status` and through the MCP `get_knowledge_status` tool. The WSL runtime is standardized on OpenFOAM 13; compatibility is still verified by preflight, `checkMesh` and the solver run.
 
-Run the test suite using:
+To ensure physics-informed reliability, HarnessFOAM is continuously evaluated against a robust suite of classical CFD verification scenarios. Our automated integration test pipeline (`pytest tests/`) validates LLM-generated dictionary accuracy, mesh topology, and solver residuals across diverse flow regimes:
+
+### 🌬️ Incompressible & Aerodynamics
+* **2D Lid-Driven Cavity Flow (`icoFoam`)** – Validates base Navier-Stokes mass conservation and velocity gradients at Re=1000.
+* **Flow Over a Circular Cylinder (`simpleFoam`)** – Assesses turbulent boundary layer separation and von Kármán vortex street shedding frequencies (Strouhal number validation) using the $k$-$\omega$ SST model.
+* **3D Ahmed Body Aerodynamics (`simpleFoam`)** – Validates complex 3D drag coefficient ($C_d$) calculations, wake topology, and automated `snappyHexMesh` generation for automotive design.
+
+### 🔥 Heat Transfer & Buoyancy
+* **Natural Convection in a Square Cavity (`buoyantBoussinesqPimpleFoam`)** – Tests the Boussinesq approximation for thermally driven flows, measuring Nusselt number correlations against Rayleigh numbers.
+* **Conjugate Heat Transfer (`chtMultiRegionFoam`)** – Validates multi-region meshing capabilities and thermal coupling between solid conductive domains and convective fluid streams (e.g., heat sinks).
+
+### 🌊 Multiphase & Free Surface
+* **Classical Dam Break (`interFoam`)** – Validates Volume of Fluid (VOF) surface tracking, phase fraction ($\alpha$) sharpening, and gravitational transient dynamics.
+* **Capillary Rise (`interFoam`)** – Tests surface tension physics and contact angle boundary condition mappings generated by the LLM.
+
+### 💥 Compressible & Shock Dynamics
+* **Sod Shock Tube (`rhoCentralFoam`)** – Evaluates the handling of Riemann problems, capturing supersonic shock waves, contact discontinuities, and expansion fans without unphysical oscillations.
+* **Supersonic Flow over a Wedge (`rhoCentralFoam`)** – Validates oblique shock wave angle predictions and compressible Mach number fields.
+
+### 🚀 Combustion & Reacting Flows
+* **Counter-Flow Diffusion Flame (`reactingFoam`)** – Tests multi-species transport, chemical kinetic mechanisms, and thermal runaway predictions.
+* **Premixed Flame Propagation (`XiFoam`)** – Validates combustion flame speed and turbulent flame wrinkling parameters.
+
+*Note: The benchmark suite runs automatically on every PR to ensure the LLM continues generating physically valid OpenFOAM syntax.*
+
+Run the automated validation test suite:
 ```bash
 pytest tests/
 ```
@@ -104,17 +318,40 @@ pytest tests/
 
 ## 🌟 Future Roadmap
 
-We are constantly pushing the boundaries of AI for Science (AI4S). Here is what we are planning for future iterations:
+We are continuously advancing HarnessFOAM to make CFD engineering fully autonomous. Here are our core milestones:
 
-- [x] **Multi-Modal Vision Integration** (Completed)
-- [x] **Zero-Barrier Auto Installation** (Completed)
-- [x] **OpenAI Codex Program Submission** (Completed)
-- [ ] **Cross-Solver Capability**: Extend beyond OpenFOAM to automate ANSYS Fluent, COMSOL, and SU2 workflows.
-- [ ] **Real-Time Digital Twin**: Enable streaming geometry adjustments during an active simulation run via real-time WebSocket communication.
+* **HPC SSH Integration & Remote Dispatch** – Enable full compatibility with remote supercomputing clusters, allowing HarnessFOAM to establish secure SSH connections to HPC systems, automatically dispatch and transfer simulation cases, generate and submit Slurm job scripts, and stream real-time solver logs back to the local Web UI.
+* **Decentralized Peer-to-Peer Scientific Computing (De-Sci)** – Establish a blockchain-backed distributed compute framework, allowing scientific researchers to scale Runner agent workloads across a global peer-to-peer network of idle GPU/HPC nodes.
+* **Generative Physical Diffusion (4D Flow-Diffusion)** – Move beyond traditional numerical discretization by integrating latent physical diffusion models (Flow-Diffusion/Flow-Sora) capable of synthesizing physically consistent 4D flow fields (3D space + time) in milliseconds under arbitrary boundary conditions.
+* **Closed-Loop Vision-Language-Action (VLA) Aero-Design** – Create a unified VLA aerodynamic design agent capable of orchestrating the entire lifecycle from natural language to 3D CAD modeling, gmsh meshing, local simulation, and automated physical verification via robotic 3D-printing and wind-tunnel testing.
+* **Quantum-Accelerated CFD (Q-CFD)** – Develop hybrid quantum-classical solvers for the Runner agent, leveraging variational quantum algorithms (VQE) and the HHL algorithm to solve dense sparse-linear Navier-Stokes matrices on QPUs.
+* **Self-Evolutionary Physics Autopilot** – Implement self-play reinforcement learning loops where agents monitor solver residuals, autonomously write and compile custom local numerical schemes, generate novel turbulence closures, and discover empirical transport laws without human heuristics.
+
+---
+
+## 📚 Related Papers
+
+If you are interested in LLM-driven CFD automation, check out these related publications:
+
+* **MetaOpenFOAM** – *MetaOpenFOAM: an LLM-based multi-agent framework for CFD* (Chen et al., [arXiv:2407.21320](https://arxiv.org/abs/2407.21320), Jul 2024)
+* **MetaOpenFOAM 2.0** – *MetaOpenFOAM 2.0: Large Language Model Driven Chain of Thought for Automating CFD Simulation and Post-Processing* (Chen et al., [arXiv:2502.00498](https://arxiv.org/abs/2502.00498), Feb 2025)
+* **OptMetaOpenFOAM** – *OptMetaOpenFOAM: Large Language Model Driven Chain of Thought for Sensitivity Analysis and Parameter Optimization based on CFD* (Chen et al., [arXiv:2503.01273](https://arxiv.org/abs/2503.01273), Mar 2025)
+* **IteraSim RAG** – *IteraSim RAG: A Multi-Stage Retrieval-Augmented Agentic Back-End for OpenFOAM-Based Computational Fluid Dynamics* (Kumar, [arXiv:2607.20346](https://arxiv.org/abs/2607.20346), Jul 2026)
+* **AutoFOAM** – *AutoFOAM: The Self-Refining Autonomous OpenFOAM Agent* (Neelan et al., [arXiv:2608.00003](https://arxiv.org/abs/2608.00003), May 2026)
+* **PhyNiKCE** – *PhyNiKCE: A Neurosymbolic Agentic Framework for Autonomous Computational Fluid Dynamics* (Fan et al., [arXiv:2602.11666](https://arxiv.org/abs/2602.11666), Feb 2026)
+* **TurboAgent** – *TurboAgent: An LLM-Driven Autonomous Multi-Agent Framework for Turbomachinery Aerodynamic Design* (Du et al., [arXiv:2604.06747](https://arxiv.org/abs/2604.06747), Apr 2026)
+* **FlamePilot** – *Towards LLM-enabled autonomous combustion research: A literature-aware agent for self-corrective modeling workflows* (Xiao et al., [arXiv:2601.01357](https://arxiv.org/abs/2601.01357), Jan 2026)
+* **ChatCFD** – *ChatCFD: An LLM-Driven Agent for End-to-End CFD Automation with Structured Knowledge and Reasoning* (Fan et al., [arXiv:2506.02019](https://arxiv.org/abs/2506.02019), May 2025)
+* **Foam-Agent** – *Foam-Agent: A Large Language Model-Based Multi-Agent Framework for Automating Computational Fluid Dynamics Workflows* (Yue et al., [arXiv:2505.04997](https://arxiv.org/abs/2505.04997), May 2025)
+* **AutoCFD / NL2FOAM** – *Fine-tuning a Large Language Model for Automating Computational Fluid Dynamics Simulations* (Dong et al., [arXiv:2504.09602](https://arxiv.org/abs/2504.09602), Apr 2025)
+* **CFDLLMBench** – *CFDLLMBench: A Benchmark Suite for Evaluating Large Language Models in Computational Fluid Dynamics* (Somasekharan et al., [arXiv:2509.20374](https://arxiv.org/abs/2509.20374), Sep 2025)
+* **CFD-copilot** – *CFD-copilot: leveraging domain-adapted large language model and model context protocol to enhance simulation automation* (Dong et al., [arXiv:2512.07917](https://arxiv.org/abs/2512.07917), Dec 2025)
+
+*Note: If the above literature has omitted your important work, please do not hesitate to contact me.*
 
 ---
 
 <div align="center">
-<i>Built with ❤️ by Isabel Curtis and the Open-Source AI4Science Community.</i><br>
+<i>Built with ❤️ by Isabel Curtis and the Open‑Source AI4Science Community.</i><br>
 <i>Empowering the next generation of automated engineering.</i>
 </div>

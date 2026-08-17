@@ -20,7 +20,11 @@ dependencies = [
     "gmsh>=4.11.1",
     "pyvista>=0.42.3",
     "mcp>=1.0.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "rich",
+    "fastapi",
+    "uvicorn",
+    "websockets"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -35,4 +39,4 @@ dev = [
 ]
 
 [project.scripts]
-harnessfoam = "harnessfoam.main:main"
+harnessfoam = "harnessfoam.cli:main"

@@ -1,4 +1,5 @@
 import os
+import os
 import re
 import requests
 from typing import Dict, List
@@ -6,7 +7,6 @@ from harnessfoam.agents.llm_config import build_llm
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
-from harnessfoam.cases.cavity import cavity_files, is_cavity_prompt
 from harnessfoam.knowledge import format_context
 from harnessfoam.case_dependencies import order_plan
 
@@ -76,10 +76,22 @@ def write_simulation_inputs(
         if skip_generation:
             continue
 
-        # Build context from previously generated files (keep short to avoid token bloat)
+        # Build context from previously generated files selectively
         context_parts = []
-        for k, v in list(generated_files.items())[-3:]:  # Only last 3 files as context
-            context_parts.append(f"--- {k} ---\n{v[:500]}\n")
+        if "system/blockMeshDict" in generated_files:
+            bmd = generated_files["system/blockMeshDict"]
+            # Extract just the boundaries if possible to save tokens
+            bnd_match = re.search(r'boundary\s*[\(\{].*?[\)\}]\s*;', bmd, re.DOTALL)
+            if bnd_match:
+                context_parts.append(f"--- system/blockMeshDict (boundaries) ---\n{bnd_match.group(0)[:1000]}\n")
+            else:
+                context_parts.append(f"--- system/blockMeshDict ---\n{bmd[:1000]}\n")
+        
+        if folder_name == "system" and file_name in ["fvSchemes", "fvSolution"]:
+            for cp in ["constant/physicalProperties", "constant/turbulenceProperties", "constant/transportProperties"]:
+                if cp in generated_files:
+                    context_parts.append(f"--- {cp} ---\n{generated_files[cp][:500]}\n")
+
         context_str = "\n".join(context_parts) if context_parts else "None yet."
 
         suggestion_text = f"CRITICAL REVISION INSTRUCTION: The previous version of this file caused an error. You MUST fix it according to this reviewer instruction: {specific_suggestion}\n\n" if specific_suggestion else ""
@@ -120,10 +132,6 @@ def write_simulation_inputs(
 
         except Exception as e:
             print(f"Input Writer: FAIL {path}: {e}", flush=True)
-            if is_cavity_prompt(prompt_text) and path in cavity_files():
-                generated_files[path] = cavity_files()[path]
-                print(f"Input Writer: FALLBACK {path} after LLM error: {e}", flush=True)
-            else:
-                raise RuntimeError(f"LLM failed while generating {path}: {e}") from e
+            raise RuntimeError(f"LLM failed while generating {path}: {e}") from e
 
     return generated_files

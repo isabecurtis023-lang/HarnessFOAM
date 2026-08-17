@@ -173,7 +173,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function appendLog(html) {
         const div = document.createElement("div");
         div.className = "log-entry";
-        div.innerHTML = html;
+        if (typeof DOMPurify !== "undefined") {
+            div.innerHTML = DOMPurify.sanitize(html);
+        } else {
+            div.innerHTML = html;
+        }
         consoleOutput.appendChild(div);
         consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }

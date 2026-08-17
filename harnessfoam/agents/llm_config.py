@@ -12,13 +12,13 @@ def build_llm(temperature: float = 0.0, **kwargs) -> BaseChatModel:
     callbacks = kwargs.get("callbacks", None)
     
     if provider == "openai":
-        # 2026-08-15 – Claude Opus 4.6 (Thinking): increased timeout for slow 科技云 models
+        # 2026-08-15 – Claude Opus 4.6 (Thinking): increased timeout for slow TechCloud models
         return ChatOpenAI(
             model=kwargs.get("model") or os.getenv("LLM_MODEL", "gpt-3.5-turbo"),
             temperature=temperature,
             api_key=kwargs.get("api_key") or os.getenv("OPENAI_API_KEY") or "dummy",
             base_url=kwargs.get("base_url") or os.getenv("OPENAI_API_BASE"),
-            timeout=600,    # 10 min – thinking models on 科技云 can be very slow
+            timeout=600,    # 10 min – thinking models on TechCloud can be very slow
             max_retries=2,
             streaming=True,  # keep connection alive during long generation
             callbacks=callbacks
@@ -110,7 +110,7 @@ class DeepSeekRobustParser(BaseOutputParser):
         except Exception as e:
             raise OutputParserException(f"Failed to parse JSON. Last error: {last_exception or e}\nRaw text: {text}")
 
-def create_structured_chain(llm, prompt, pydantic_schema):
+def create_structured_chain(llm, prompt, pydantic_schema, example_json_str=None):
     """
     Creates a robust chain for extracting structured data, handling models that 
     may output <think> tags or refuse native function calling.
@@ -118,6 +118,11 @@ def create_structured_chain(llm, prompt, pydantic_schema):
     schema_json = json.dumps(pydantic_schema.model_json_schema())
     schema_json_escaped = schema_json.replace("{", "{{").replace("}", "}}")
     
+    example_block = ""
+    if example_json_str:
+        example_json_escaped = example_json_str.replace("{", "{{").replace("}", "}}")
+        example_block = f"\nExample Output:\n{example_json_escaped}\n"
+
     format_instructions = f"""
 
 ====================
@@ -126,13 +131,7 @@ You must output ONLY a valid JSON object containing your actual generated data.
 CRITICAL: DO NOT output the schema itself! I am providing the schema below so you know what fields are required, but you must return a JSON instance with ACTUAL VALUES populated for this specific case.
 JSON Schema to follow:
 {schema_json_escaped}
-
-Example Output:
-{{{{
-  "is_visualization_required": true,
-  "pyvista_script": "import pyvista as pv\\nwith open('case.foam', 'w') as f: pass\\nreader = pv.OpenFOAMReader('case.foam')\\nreader.set_active_time_value(reader.time_values[-1])\\nmesh = reader.read()\\nplotter = pv.Plotter(off_screen=True)\\nplotter.add_mesh(mesh, scalars='U')\\nplotter.view_isometric()\\nplotter.screenshot('visualization.png')\\nplotter.close()"
-}}}}
-
+{example_block}
 Remember: Output ONLY the raw JSON data object. No markdown, no explanations."""
     
     # Append instructions to prompt

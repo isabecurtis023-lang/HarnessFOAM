@@ -27,7 +27,7 @@ def run_cavity_repair_scenario(output_dir: str, *, execute: bool = False, confir
 
     preview = apply_patch("0/U", files["0/U"], str(root), confirm=False)
     applied = apply_patch("0/U", files["0/U"], str(root), confirm=confirm)
-    repaired_ok, repaired_errors = validate_case_files(str(root), _plan()) if confirm else (False, ["修复尚未确认"])
+    repaired_ok, repaired_errors = validate_case_files(str(root), _plan()) if confirm else (False, ["Repair not confirmed yet"])
     result = {"status": "PASSED" if (not initial_ok and repaired_ok) else "FAILED",
               "initial_ok": initial_ok, "initial_errors": initial_errors,
               "suggestions": suggestions, "diff": preview.get("diff", ""),

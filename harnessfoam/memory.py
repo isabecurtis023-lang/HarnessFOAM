@@ -33,7 +33,7 @@ def _compress(text: str, limit: int) -> str:
         return text
     lines = [line for line in text.splitlines() if line.strip()]
     tail = lines[-max(8, limit // 80):]
-    compact = "\n".join(lines[:2] + ["\n> [自动压缩] 旧记录已折叠，仅保留近期经验。\n"] + tail)
+    compact = "\n".join(lines[:2] + ["\n> [Auto-Compressed] Old records folded, keeping only recent experience.\n"] + tail)
     return " ".join(compact.split()[:limit])
 
 def read_memory(case_dir: str, agent: str, *, enabled: bool = False,
