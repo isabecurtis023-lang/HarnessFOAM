@@ -9,8 +9,63 @@ document.addEventListener("DOMContentLoaded", () => {
     const postprocessBtn = document.getElementById("postprocess-btn");
     const runOpenfoamBtn = document.getElementById("run-openfoam-btn");
     const optimizeBtn = document.getElementById("optimize-btn");
+    const interfaceMatrixBtn = document.getElementById("interface-matrix-btn");
+    const interfaceMatrixResult = document.getElementById("interface-matrix-result");
+    const repairPreviewBtn = document.getElementById("assistant-repair-preview");
+    const repairApplyBtn = document.getElementById("assistant-repair-apply");
+    const repairRunBtn = document.getElementById("assistant-repair-run");
+    const repairResult = document.getElementById("assistant-repair-result");
+    let repairOutputDir = "";
     
     let ws = null;
+
+    if (interfaceMatrixBtn) {
+        interfaceMatrixBtn.addEventListener("click", async () => {
+            interfaceMatrixBtn.disabled = true;
+            interfaceMatrixBtn.textContent = "Checking interfaces...";
+            try {
+                const response = await fetch('/api/benchmark/interface-matrix');
+                const result = await response.json();
+                interfaceMatrixResult.textContent = JSON.stringify(result, null, 2);
+                appendLog(`<span class="info">Interface matrix: ${result.status || "UNKNOWN"}</span>`);
+            } catch (error) {
+                interfaceMatrixResult.textContent = `Interface check failed: ${error.message}`;
+                appendLog(`<span class="error">Interface matrix failed: ${error.message}</span>`);
+            } finally {
+                interfaceMatrixBtn.disabled = false;
+                interfaceMatrixBtn.textContent = "Check CLI / Web / MCP";
+            }
+        });
+    }
+
+    async function assistantRepair(confirm, execute) {
+        const requestedDir = outputDirInput && outputDirInput.value.trim();
+        repairOutputDir = repairOutputDir || requestedDir || "tmp_web_assistant_repair";
+        const button = execute ? repairRunBtn : (confirm ? repairApplyBtn : repairPreviewBtn);
+        if (button) { button.disabled = true; button.textContent = execute ? "Running..." : (confirm ? "Applying..." : "Analyzing..."); }
+        try {
+            const response = await fetch('/api/assistant/repair', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({output_dir: repairOutputDir, confirm, execute})
+            });
+            const result = await response.json();
+            repairResult.textContent = JSON.stringify(result, null, 2);
+            appendLog(`<span class="info">Assistant repair ${confirm ? (execute ? "regression" : "confirmation") : "preview"}: ${result.status || "UNKNOWN"}</span>`);
+            if (!confirm && result.patch_status === "REQUIRES_CONFIRMATION") repairApplyBtn.disabled = false;
+            if (confirm && result.patch_status === "APPLIED") repairRunBtn.disabled = false;
+        } catch (error) {
+            repairResult.textContent = `Repair request failed: ${error.message}`;
+            appendLog(`<span class="error">Assistant repair failed: ${error.message}</span>`);
+        } finally {
+            if (repairPreviewBtn) { repairPreviewBtn.disabled = false; repairPreviewBtn.textContent = "Analyze & Preview"; }
+            if (repairApplyBtn && repairApplyBtn.disabled === false) repairApplyBtn.textContent = "Confirm Fix";
+            if (repairRunBtn && repairRunBtn.disabled === false) repairRunBtn.textContent = "Run Regression";
+        }
+    }
+
+    if (repairPreviewBtn) repairPreviewBtn.addEventListener("click", () => assistantRepair(false, false));
+    if (repairApplyBtn) repairApplyBtn.addEventListener("click", () => assistantRepair(true, false));
+    if (repairRunBtn) repairRunBtn.addEventListener("click", () => assistantRepair(true, true));
 
     if (optimizeBtn) {
         optimizeBtn.addEventListener("click", async () => {

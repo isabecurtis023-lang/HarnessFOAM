@@ -683,6 +683,21 @@ details.think-block .think-content {
     gap: 0.5rem;
 }
 
+.assistant-repair-card {
+    margin: 0.75rem 1rem 0;
+    padding: 0.75rem;
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    border-radius: 10px;
+    background: rgba(168, 85, 247, 0.06);
+}
+
+.assistant-repair-title { color: #e9d5ff; font-size: 0.78rem; font-weight: 600; }
+.assistant-repair-hint { color: var(--text-muted); font-size: 0.72rem; line-height: 1.4; margin: 0.35rem 0 0.6rem; }
+.assistant-repair-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.assistant-repair-actions button { margin: 0; padding: 0.45rem 0.35rem; font-size: 0.72rem; }
+.assistant-repair-actions button:last-child { grid-column: 1 / -1; }
+.assistant-repair-result { max-height: 130px; overflow: auto; margin: 0.6rem 0 0; padding: 0.5rem; white-space: pre-wrap; color: #cbd5e1; background: rgba(0,0,0,0.25); border-radius: 6px; font: 0.68rem/1.35 'JetBrains Mono', monospace; }
+
 .sider-input-area input {
     flex: 1;
     background: rgba(0, 0, 0, 0.4);

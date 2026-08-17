@@ -260,6 +260,11 @@ class GitHubFeedbackRequest(BaseModel):
     base: str = "master"
     confirm: bool = False
 
+class AssistantRepairRequest(BaseModel):
+    output_dir: str = "tmp_assistant_cavity_repair"
+    confirm: bool = False
+    execute: bool = False
+
 class MemoryClearRequest(BaseModel):
     case_dir: str
     agent: str | None = None
@@ -314,10 +319,24 @@ def assistant_cavity(output_dir: str = "tmp_assistant_cavity"):
     from harnessfoam.assistant_tools import run_cavity_benchmark
     return run_cavity_benchmark(output_dir)
 
+@app.get("/api/benchmark/interface-matrix")
+def benchmark_interface_matrix(include_tutorials: bool = False):
+    from harnessfoam.benchmark_matrix import run_interface_matrix
+    return run_interface_matrix(include_tutorials=include_tutorials)
+
 @app.post("/api/assistant/cavity-repair")
 def assistant_cavity_repair(output_dir: str = "tmp_assistant_cavity_repair", execute: bool = False):
     from harnessfoam.cavity_repair import run_cavity_repair_scenario
     return run_cavity_repair_scenario(output_dir, execute=execute)
+
+@app.post("/api/assistant/repair")
+def assistant_repair(req: AssistantRepairRequest):
+    """Two-phase, deterministic repair workflow for the Web Assistant."""
+    from harnessfoam.cavity_repair import run_cavity_repair_scenario
+    try:
+        return run_cavity_repair_scenario(req.output_dir, confirm=req.confirm, execute=req.execute)
+    except Exception as exc:
+        return {"status": "FAILED", "stage": "assistant_repair", "error": str(exc)}
 
 @app.post("/api/save_file")
 def save_file(req: SaveFileRequest):

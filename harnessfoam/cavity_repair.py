@@ -9,7 +9,7 @@ from harnessfoam.assistant_tools import apply_patch
 def _plan():
     return [{"folder": path.split("/", 1)[0], "file": path.split("/", 1)[1]} for path in cavity_files()]
 
-def run_cavity_repair_scenario(output_dir: str, *, execute: bool = False) -> dict:
+def run_cavity_repair_scenario(output_dir: str, *, execute: bool = False, confirm: bool = True) -> dict:
     root = Path(output_dir).resolve()
     files = cavity_files()
     for relative, content in files.items():
@@ -26,8 +26,8 @@ def run_cavity_repair_scenario(output_dir: str, *, execute: bool = False) -> dic
         return {"status": "FAILED", "stage": "locate", "errors": initial_errors, "suggestions": suggestions}
 
     preview = apply_patch("0/U", files["0/U"], str(root), confirm=False)
-    applied = apply_patch("0/U", files["0/U"], str(root), confirm=True)
-    repaired_ok, repaired_errors = validate_case_files(str(root), _plan())
+    applied = apply_patch("0/U", files["0/U"], str(root), confirm=confirm)
+    repaired_ok, repaired_errors = validate_case_files(str(root), _plan()) if confirm else (False, ["修复尚未确认"])
     result = {"status": "PASSED" if (not initial_ok and repaired_ok) else "FAILED",
               "initial_ok": initial_ok, "initial_errors": initial_errors,
               "suggestions": suggestions, "diff": preview.get("diff", ""),
