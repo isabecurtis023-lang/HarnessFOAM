@@ -30,6 +30,13 @@ async def run_cavity_benchmark(output_dir: str = "tmp_mcp_cavity") -> str:
     return json.dumps(run_cavity_smoke(output_dir), ensure_ascii=False)
 
 @mcp.tool()
+async def run_cavity_repair_benchmark(output_dir: str = "tmp_mcp_cavity_repair", execute: bool = False) -> str:
+    """Inject a cavity patch error, preview/apply a deterministic fix, and revalidate it."""
+    import json
+    from harnessfoam.cavity_repair import run_cavity_repair_scenario
+    return json.dumps(run_cavity_repair_scenario(output_dir, execute=execute), ensure_ascii=False)
+
+@mcp.tool()
 async def search_repository(query: str) -> str:
     """Search repository source files for an assistant diagnostic query."""
     import json

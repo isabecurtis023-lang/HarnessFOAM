@@ -74,6 +74,7 @@ def main():
 
     benchmark_parser = subparsers.add_parser("benchmark", help="Run deterministic OpenFOAM 13 benchmark regressions")
     benchmark_parser.add_argument("--tutorial", choices=["cavity", "pitzDaily", "damBreak", "shockTube", "all"], default="all")
+    benchmark_parser.add_argument("--report", default="", help="Write machine-readable JSON report to this path")
     
     args = parser.parse_args()
     
@@ -87,7 +88,11 @@ def main():
         import json
         from harnessfoam.tutorial_regression import run_tutorial_regression, list_tutorial_regressions
         names = list(list_tutorial_regressions()) if args.tutorial == "all" else [args.tutorial]
-        print(json.dumps({name: run_tutorial_regression(name) for name in names}, ensure_ascii=False, indent=2))
+        report = {name: run_tutorial_regression(name) for name in names}
+        if args.report:
+            from harnessfoam.benchmark_report import write_benchmark_report
+            print(f"Report: {write_benchmark_report(report, args.report)}")
+        print(json.dumps(report, ensure_ascii=False, indent=2))
     elif args.command == "run" or args.command is None:
         # Fallback for old positional usage or explicit run command
         prompt = getattr(args, "prompt", "Default simulation prompt")

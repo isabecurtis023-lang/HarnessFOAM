@@ -314,6 +314,11 @@ def assistant_cavity(output_dir: str = "tmp_assistant_cavity"):
     from harnessfoam.assistant_tools import run_cavity_benchmark
     return run_cavity_benchmark(output_dir)
 
+@app.post("/api/assistant/cavity-repair")
+def assistant_cavity_repair(output_dir: str = "tmp_assistant_cavity_repair", execute: bool = False):
+    from harnessfoam.cavity_repair import run_cavity_repair_scenario
+    return run_cavity_repair_scenario(output_dir, execute=execute)
+
 @app.post("/api/save_file")
 def save_file(req: SaveFileRequest):
     import os

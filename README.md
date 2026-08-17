@@ -121,7 +121,7 @@ The repository contains deterministic checks for all three interfaces:
 
 Run the local checks with `pytest tests/unit -q`, `python -m compileall -q harnessfoam`, and the tutorial registry from `harnessfoam.tutorial_regression`. A configured LLM is still required for non-fallback generation; the cavity benchmark remains LLM-free and reproducible.
 
-The CLI exposes the same deterministic tutorial gate with `python -m harnessfoam.cli benchmark --tutorial all`. Assistant-triggered test execution is repository-scoped and returns machine-readable `PASSED`/`FAILED` output; patch application always returns a unified diff before requiring confirmation.
+The CLI exposes the same deterministic tutorial gate with `python -m harnessfoam.cli benchmark --tutorial all --report benchmark_report.json`. Assistant-triggered test execution is repository-scoped and returns machine-readable `PASSED`/`FAILED` output; patch application always returns a unified diff before requiring confirmation. The cavity repair benchmark intentionally breaks `0/U`, locates the patch mismatch, previews/applies a fix, reruns preflight, and can execute the OpenFOAM 13 smoke solver.
 
 ---
 
