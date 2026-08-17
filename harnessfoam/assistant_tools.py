@@ -4,15 +4,24 @@ import difflib
 import re
 import subprocess
 import sys
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 MAX_READ = 2 * 1024 * 1024
+SENSITIVE_NAMES = {".env", ".env.local", ".env.production", "id_rsa", "id_ed25519"}
+
+def _assert_safe_target(target: Path, root: Path) -> None:
+    relative_parts = {part.lower() for part in target.relative_to(root).parts}
+    if ".git" in relative_parts or target.name.lower() in SENSITIVE_NAMES or target.suffix.lower() in {".pem", ".key", ".p12"}:
+        raise PermissionError("assistant access is blocked for sensitive or Git metadata files")
 
 def resolve_repo_path(path: str, repo_root: str | None = None) -> Path:
     root = Path(repo_root or Path(__file__).resolve().parents[1]).resolve()
     candidate = (root / path).resolve() if not Path(path).is_absolute() else Path(path).resolve()
     if candidate != root and root not in candidate.parents:
         raise ValueError("path escapes the HarnessFOAM repository")
+    _assert_safe_target(candidate, root)
     return candidate
 
 def read_file(path: str, repo_root: str | None = None) -> dict:
@@ -27,7 +36,7 @@ def search_files(query: str, repo_root: str | None = None) -> list[dict]:
     root = resolve_repo_path(".", repo_root)
     results = []
     for path in root.rglob("*"):
-        if not path.is_file() or any(part in {".git", "__pycache__", ".venv"} for part in path.parts):
+        if not path.is_file() or any(part.lower() in {".git", "__pycache__", ".venv"} for part in path.parts) or path.name.lower() in SENSITIVE_NAMES:
             continue
         try: text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError): continue
@@ -46,6 +55,11 @@ def apply_patch(path: str, content: str, repo_root: str | None = None, *, confir
                 "message": "Explicit confirmation is required before writing.", "diff": diff[:20000]}
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content, encoding="utf-8")
+    root = Path(repo_root or Path(__file__).resolve().parents[1]).resolve()
+    audit = root / ".harnessfoam" / "assistant_audit.jsonl"
+    audit.parent.mkdir(parents=True, exist_ok=True)
+    with audit.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"time": datetime.now(timezone.utc).isoformat(), "action": "apply_patch", "path": path, "status": "APPLIED"}, ensure_ascii=False) + "\n")
     return {"status": "APPLIED", "path": str(target), "diff": diff[:20000]}
 
 def run_unit_tests(repo_root: str | None = None) -> dict:
