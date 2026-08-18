@@ -2,6 +2,9 @@ import platform
 import shutil
 import subprocess
 import os
+import logging
+logger = logging.getLogger(__name__)
+
 
 def is_openfoam_installed() -> bool:
     """Check if blockMesh (a standard OpenFOAM utility) is available in PATH."""
@@ -25,9 +28,9 @@ def prompt_and_install_openfoam() -> bool:
     if is_openfoam_installed():
         return True
         
-    print("\n[WARNING] OpenFOAM is not detected on your system PATH.")
+    logger.info("\n[WARNING] OpenFOAM is not detected on your system PATH.")
     cmd = get_install_command()
-    print(f"Recommended installation method for your OS ({platform.system()}):\n> {cmd}\n")
+    logger.info(f"Recommended installation method for your OS ({platform.system()}):\n> {cmd}\n")
     
     response = input("Would you like to attempt automatic installation? (y/N): ")
     if response.lower() == 'y':
@@ -40,11 +43,11 @@ def prompt_and_install_openfoam() -> bool:
             else:
                 # Docker attempt
                 subprocess.run(["docker", "pull", "openfoam/openfoam10-paraview510"], check=True)
-            print("Installation routine completed. Please verify OpenFOAM is working.")
+            logger.info("Installation routine completed. Please verify OpenFOAM is working.")
             return True
         except Exception as e:
-            print(f"Installation failed: {e}")
-            print("Please install OpenFOAM manually.")
+            logger.info(f"Installation failed: {e}")
+            logger.info("Please install OpenFOAM manually.")
             return False
     return False
 
@@ -52,4 +55,4 @@ if __name__ == "__main__":
     if not is_openfoam_installed():
         prompt_and_install_openfoam()
     else:
-        print("OpenFOAM is correctly installed.")
+        logger.info("OpenFOAM is correctly installed.")

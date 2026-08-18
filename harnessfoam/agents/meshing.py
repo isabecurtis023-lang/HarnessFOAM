@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+import logging
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -66,15 +69,15 @@ def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict 
                 ]
                 
                 if all(token in content for token in required_tokens):
-                    print(f"Meshing Agent: SKIP mesh.py generation (already exists and passed strict structural validation)", flush=True)
+                    logger.info(f"Meshing Agent: SKIP mesh.py generation (already exists and passed strict structural validation)")
                     return {
                         "is_gmsh_required": True,
                         "python_script": content
                     }
                 else:
-                    print(f"Meshing Agent: Existing mesh.py is incomplete or invalid. Regenerating...", flush=True)
+                    logger.info(f"Meshing Agent: Existing mesh.py is incomplete or invalid. Regenerating...")
             except Exception as e:
-                print(f"Meshing Agent: Failed to read existing mesh.py: {e}")
+                logger.info(f"Meshing Agent: Failed to read existing mesh.py: {e}")
 
     try:
         chain = build_meshing_agent(llm_kwargs=llm_kwargs)
@@ -86,7 +89,7 @@ def generate_mesh_script(prompt_text: str, case_dir: str = "", llm_kwargs: dict 
             "python_script": result.python_script
         }
     except Exception as e:
-        print(f"Meshing Agent failed: {e}")
+        logger.info(f"Meshing Agent failed: {e}")
         # Fallback mechanism
         return {
             "is_gmsh_required": False,

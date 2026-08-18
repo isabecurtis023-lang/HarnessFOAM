@@ -2,6 +2,9 @@ from typing import TypedDict, List, Dict, Any, Optional
 import os
 from langgraph.graph import StateGraph, END
 import time
+import logging
+logger = logging.getLogger(__name__)
+
 
 class SimulationState(TypedDict, total=False):
     prompt: str
@@ -67,12 +70,12 @@ def architect_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'architect'
     _memory_event(state, 'architect', 'started', state.get('prompt', ''))
 
-    print(f"Architect Agent: Planning simulation for case {state['case_id']}")
+    logger.info(f"Architect Agent: Planning simulation for case {state['case_id']}")
     llm_kwargs = state.get('llm_kwargs') or {}
     memory = prompt_context(state.get('case_dir'), 'architect', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {})
     state['plan'] = plan_simulation(state['prompt'], llm_kwargs=llm_kwargs, memory_context=memory)
     state['file_plan'] = state['plan']
-    print(f"Architect plan generated: {len(state['plan'])} files.")
+    logger.info(f"Architect plan generated: {len(state['plan'])} files.")
     _memory_event(state, 'architect', 'success', f"generated {len(state['plan'])} files")
     return state
 
@@ -82,7 +85,7 @@ from harnessfoam.agents.visualizer import generate_visualization_script
 def meshing_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'meshing'
     _memory_event(state, 'meshing', 'started', state.get('prompt', ''))
-    print(f"Meshing Agent: Generating mesh for case {state['case_dir']}")
+    logger.info(f"Meshing Agent: Generating mesh for case {state['case_dir']}")
     llm_kwargs = state.get('llm_kwargs') or {}
     case_dir = state.get('case_dir', '')
     suggestions = state.get('logs', {}).get('review_suggestions', [])
@@ -100,7 +103,7 @@ def meshing_node(state: SimulationState) -> SimulationState:
             mesh_script_path = os.path.join(case_dir, "mesh.py")
             with open(mesh_script_path, "w", newline="\n", encoding="utf-8") as f:
                 f.write(mesh_results['python_script'])
-            print(f"Meshing Agent: Wrote gmsh script to {mesh_script_path}")
+            logger.info(f"Meshing Agent: Wrote gmsh script to {mesh_script_path}")
             
     state['mesh_job_id'] = f"mesh_{state['case_id']}_{int(time.time())}"
     return state
@@ -110,7 +113,7 @@ from harnessfoam.agents.input_writer import write_simulation_inputs
 def input_writer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'input_writer'
     _memory_event(state, 'input_writer', 'started', state.get('prompt', ''))
-    print(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
+    logger.info(f"Input Writer Agent: Generating files for {len(state['plan'])} configurations")
     llm_kwargs = state.get('llm_kwargs') or {}
     case_dir = state.get('case_dir', '')
     suggestions = state.get('logs', {}).get('review_suggestions', [])
@@ -160,7 +163,7 @@ def preflight_node(state: SimulationState) -> SimulationState:
     if not ok:
         state['status'] = 'FAILED'
         state['logs']['execution_error'] = "Preflight validation failed:\n" + "\n".join(errors)
-        print("Preflight validation failed:", errors)
+        logger.warning("Preflight validation failed: %s", errors)
     return state
 
 from harnessfoam.agents.runner import generate_hpc_script, generate_local_script, execute_local_simulation
@@ -168,7 +171,7 @@ from harnessfoam.agents.reviewer import analyze_errors
 
 def runner_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'runner'
-    print(f"Runner Agent: Generating run script...")
+    logger.info(f"Runner Agent: Generating run script...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
     llm_kwargs = state.get('llm_kwargs') or {}
@@ -200,7 +203,7 @@ def runner_node(state: SimulationState) -> SimulationState:
                 websocket = getattr(callbacks[0], 'websocket', None)
                 loop = getattr(callbacks[0], 'loop', None)
         except Exception as e:
-            print(f"[Runner Debug] Exception extracting callbacks: {e}")
+            logger.info(f"[Runner Debug] Exception extracting callbacks: {e}")
 
         try:
             returncode, stdout_str, stderr_str = execute_local_simulation(state['case_dir'], websocket=websocket, loop=loop)
@@ -210,7 +213,7 @@ def runner_node(state: SimulationState) -> SimulationState:
             if returncode != 0:
                 state['status'] = 'FAILED'
                 state['logs']['execution_error'] = stdout_str[-2000:]
-                print(f"Runner Agent failed with code {returncode}")
+                logger.info(f"Runner Agent failed with code {returncode}")
             else:
                 # Deduce solver name for physics validation
                 solver_name = "icoFoam"
@@ -248,7 +251,7 @@ def runner_node(state: SimulationState) -> SimulationState:
             state['status'] = 'FAILED'
             state['logs']['run_stderr'] = str(e)
             state['logs']['execution_error'] = str(e)
-            print(f"Runner Agent execution exception: {e}")
+            logger.info(f"Runner Agent execution exception: {e}")
             
     else:
         with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
@@ -266,7 +269,7 @@ def runner_node(state: SimulationState) -> SimulationState:
 def reviewer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'reviewer'
     _memory_event(state, 'reviewer', 'started', state.get('logs', {}).get('execution_error', ''))
-    print(f"Reviewer Agent: Analyzing errors...")
+    logger.info(f"Reviewer Agent: Analyzing errors...")
     state['errors'] += 1
     
     error_logs = state['logs'].get('execution_error', 'Unknown error')
@@ -297,7 +300,7 @@ def reviewer_node(state: SimulationState) -> SimulationState:
         record_self_improvement(state['case_dir'], agent='reviewer', error=error_logs,
                                 fix=str(review_results['suggestions']), enabled=True,
                                 limits=state.get('memory_limits') or {})
-    print(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
+    logger.info(f"Reviewer found {len(review_results['suggestions'])} fixes to apply.")
     return state
 
 from harnessfoam.agents.visualizer import execute_visualization
@@ -306,7 +309,7 @@ from harnessfoam.agents.reviewer import analyze_visual_anomalies
 def visualizer_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'visualizer'
     _memory_event(state, 'visualizer', 'started', state.get('post_prompt', ''))
-    print(f"Visualization Agent: Generating visuals...")
+    logger.info(f"Visualization Agent: Generating visuals...")
     
     # If the user provided a custom post-processing prompt, use it; else use the main prompt
     viz_prompt = state.get('post_prompt') or (
@@ -323,7 +326,7 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     # solver run.  The model may still choose the field and plot style, but it
     # cannot accidentally disable the automatic post-processing stage.
     if state['status'] == 'SUCCESS':
-        print("Visualizer Agent generated PyVista script. Executing locally...")
+        logger.info("Visualizer Agent generated PyVista script. Executing locally...")
         img_base64 = execute_visualization(state['case_dir'], viz_results['pyvista_script'])
         if img_base64:
             state['image_base64'] = img_base64
@@ -338,12 +341,12 @@ def visualizer_node(state: SimulationState) -> SimulationState:
             if visual_review.get('visual_review_status') == 'FAILED':
                 state['status'] = 'FAILED'
                 state['logs']['execution_error'] = 'Visual physics review failed:\n' + visual_review.get('vlm_feedback', '')
-            print("Visualization successfully rendered.")
+            logger.info("Visualization successfully rendered.")
         else:
             state['logs']['postprocess_status'] = 'FAILED'
             state['logs']['postprocess_error'] = 'Visualizer script did not produce visualization.png'
     else:
-        print("No visualization requested or simulation failed.")
+        logger.info("No visualization requested or simulation failed.")
         state['logs']['postprocess_status'] = 'SKIPPED'
         
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
@@ -369,7 +372,7 @@ def should_review(state: SimulationState) -> str:
 def route_after_review(state: SimulationState) -> str:
     suggestions = state['logs'].get('review_suggestions', [])
     if any(s.get('file') == 'mesh.py' for s in suggestions):
-        print("Reviewer requested fix for mesh.py, routing to Meshing Agent...", flush=True)
+        logger.info("Reviewer requested fix for mesh.py, routing to Meshing Agent...")
         return "meshing"
     return "input_writer"
 

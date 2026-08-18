@@ -9,6 +9,9 @@ from langchain_core.output_parsers import StrOutputParser
 from dotenv import load_dotenv
 from harnessfoam.knowledge import format_context
 from harnessfoam.case_dependencies import order_plan
+import logging
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -67,11 +70,11 @@ def write_simulation_inputs(
                     existing_content = f.read()
                 # Simple heuristic to determine if it's a valid OpenFOAM file
                 if "FoamFile" in existing_content and "Mock OpenFOAM content" not in existing_content:
-                    print(f"Input Writer: SKIP {path} (already exists and valid)", flush=True)
+                    logger.info(f"Input Writer: SKIP {path} (already exists and valid)")
                     generated_files[path] = existing_content
                     skip_generation = True
             except Exception as e:
-                print(f"Input Writer: Failed to read existing {path}: {e}")
+                logger.info(f"Input Writer: Failed to read existing {path}: {e}")
 
         if skip_generation:
             continue
@@ -128,10 +131,10 @@ def write_simulation_inputs(
                 raise ValueError("API returned empty content after stripping")
 
             generated_files[path] = content
-            print(f"Input Writer: OK {path} ({len(content)} chars)", flush=True)
+            logger.info(f"Input Writer: OK {path} ({len(content)} chars)")
 
         except Exception as e:
-            print(f"Input Writer: FAIL {path}: {e}", flush=True)
+            logger.info(f"Input Writer: FAIL {path}: {e}")
             raise RuntimeError(f"LLM failed while generating {path}: {e}") from e
 
     return generated_files

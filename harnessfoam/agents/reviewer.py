@@ -6,6 +6,9 @@ from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import re
 from harnessfoam.knowledge import format_context
+import logging
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -97,7 +100,7 @@ def analyze_visual_anomalies(image_path: str, user_requirement: str, llm_kwargs:
         passed = "yes" in response.content.lower() or "correct" in response.content.lower()
         return {"visual_inspection_passed": passed, "visual_review_status": "PASSED" if passed else "FAILED", "vlm_feedback": response.content}
     except Exception as e:
-        print(f"Visual Reviewer (VLM) failed: {e}")
+        logger.info(f"Visual Reviewer (VLM) failed: {e}")
         return {
             "visual_inspection_passed": None,
             "visual_review_status": "SKIPPED",

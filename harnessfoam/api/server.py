@@ -7,6 +7,9 @@ from pydantic import BaseModel
 import uvicorn
 from harnessfoam.agents.graph import create_workflow, SimulationState
 from langchain_core.callbacks import BaseCallbackHandler
+import logging
+logger = logging.getLogger(__name__)
+
 
 class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
     def __init__(self, websocket: WebSocket, agent_name: str = "LLM"):
@@ -34,7 +37,7 @@ class WebSocketStreamingCallbackHandler(BaseCallbackHandler):
             pass
 
     def on_llm_new_token(self, token: str, **kwargs):
-        print("TOKEN:", repr(token)) # DEBUG
+        logger.debug("TOKEN: %r", token)
         try:
             asyncio.run_coroutine_threadsafe(
                 self.websocket.send_json({
@@ -380,7 +383,7 @@ echo "Simulation complete!"
                     with open(case_foam_path, "w") as f:
                         pass
                 except Exception as e:
-                    print(f"Failed to create case.foam: {e}")
+                    logger.info(f"Failed to create case.foam: {e}")
                     
             try:
                 with open(script_path, "r", encoding="utf-8") as f:
@@ -390,7 +393,7 @@ echo "Simulation complete!"
                     with open(script_path, "w", encoding="utf-8") as f:
                         f.write(content)
             except Exception as e:
-                print(f"Failed to patch reader.update(): {e}")
+                logger.info(f"Failed to patch reader.update(): {e}")
                 
             import shutil
             cmd = [sys.executable, "viz_postprocess.py"]
@@ -419,7 +422,7 @@ echo "Simulation complete!"
                         with open(img_path, "rb") as image_file:
                             img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
                     except Exception as e:
-                        print(f"Failed to read visualization.png: {e}")
+                        logger.info(f"Failed to read visualization.png: {e}")
                 
                 payload = {
                     "type": "complete",
@@ -546,7 +549,7 @@ echo "Simulation complete!"
         await websocket.send_json(response_payload)
         
     except WebSocketDisconnect:
-        print("Client disconnected")
+        logger.info("Client disconnected")
     except Exception as e:
         await websocket.send_json({"type": "error", "message": str(e)})
     finally:
@@ -640,6 +643,6 @@ User Question:
         await websocket.send_json({"type": "error", "text": str(e)})
 
 def start_server(host="127.0.0.1", port=8000):
-    print(f"Starting HarnessFOAM Web Interface at http://{host}:{port}")
+    logger.info(f"Starting HarnessFOAM Web Interface at http://{host}:{port}")
     # 2026-08-15 – Gemini 3.5 Flash: Enable auto-reload for future development convenience
     uvicorn.run("harnessfoam.api.server:app", host=host, port=port, reload=True)

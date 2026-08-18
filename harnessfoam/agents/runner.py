@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+import logging
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -39,7 +42,7 @@ def generate_hpc_script(prompt_text: str, llm_kwargs: dict = None, memory_contex
         result = chain.invoke({"user_requirement": prompt_text + memory_context})
         return result.script_content
     except Exception as e:
-        print(f"Runner Agent failed: {e}")
+        logger.info(f"Runner Agent failed: {e}")
         # Fallback script
         return "#!/bin/bash\n#SBATCH -N 1\n#SBATCH -n 32\n./Allrun -parallel"
 
@@ -123,7 +126,7 @@ def execute_local_simulation(case_dir: str, websocket=None, loop=None) -> tuple[
     for line in process.stdout:
         line_clean = line.rstrip()
         run_output.append(line_clean)
-        print(f"[OpenFOAM] {line_clean}")
+        logger.info(f"[OpenFOAM] {line_clean}")
         if websocket and loop:
             try:
                 asyncio.run_coroutine_threadsafe(

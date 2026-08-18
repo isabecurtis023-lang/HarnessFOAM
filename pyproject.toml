@@ -21,10 +21,11 @@ dependencies = [
     "pyvista>=0.42.3",
     "mcp>=1.0.0",
     "python-dotenv>=1.0.0",
-    "rich",
-    "fastapi",
-    "uvicorn",
-    "websockets"
+    "rich>=13.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "websockets>=11.0",
+    "httpx>=0.24.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

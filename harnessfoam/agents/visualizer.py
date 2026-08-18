@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field
 from harnessfoam.agents.llm_config import build_llm, create_structured_chain
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
+import logging
+logger = logging.getLogger(__name__)
+
 
 load_dotenv()
 
@@ -64,7 +67,7 @@ def generate_visualization_script(prompt_text: str, llm_kwargs: dict = None, mem
             "pyvista_script": result.pyvista_script
         }
     except Exception as e:
-        print(f"Visualizer Agent failed, using default post-processing script: {e}")
+        logger.info(f"Visualizer Agent failed, using default post-processing script: {e}")
         # Deep Driving must remain useful when the model is unavailable.  This
         # is a real post-processing script, never a placeholder response.
         return {
@@ -116,5 +119,5 @@ def execute_visualization(case_dir: str, pyvista_script: str) -> str:
             with open(img_path, "rb") as image_file:
                 return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        print(f"Failed to execute visualization: {e}")
+        logger.info(f"Failed to execute visualization: {e}")
     return ""

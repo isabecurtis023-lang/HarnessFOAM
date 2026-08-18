@@ -203,13 +203,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     envDot.style.backgroundColor = "#f59e0b";
                     const details = missing.length ? `Missing: ${missing.join(', ')}` : 'WSL gmsh unavailable';
-                    envStatus.innerHTML = `Environment: <span style="color:#f59e0b">${details}</span>`;
+                    envStatus.innerHTML = DOMPurify.sanitize(`Environment: <span style="color:#f59e0b">${details}</span>`);
                 }
             })
             .catch(error => {
                 envDot.style.backgroundColor = "#ef4444";
                 const message = error.name === "AbortError" ? "Check timed out" : "Status unavailable";
-                envStatus.innerHTML = `Environment: <span style="color:#ef4444">${message}</span>`;
+                envStatus.innerHTML = DOMPurify.sanitize(`Environment: <span style="color:#ef4444">${message}</span>`);
             })
             .finally(() => clearTimeout(timeout));
     }
@@ -403,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (err) {
                 console.error("Failed to browse folder:", err);
-                alert("Failed to open folder browser. Please ensure:\n1. You accessed the page via http://127.0.0.1:8000 (not by opening the HTML file directly).\n2. The HarnessFOAM backend server is running in the terminal.");
+                alert("Failed to open folder browser. Please ensure:\n1. You accessed the page via " + window.location.origin (not by opening the HTML file directly).\n2. The HarnessFOAM backend server is running in the terminal.");
             } finally {
                 browseBtn.textContent = originalText;
             }
@@ -684,7 +684,7 @@ document.addEventListener("DOMContentLoaded", () => {
             parentElement.innerHTML = ""; // clear loading or old content
             
             if (data.error) {
-                parentElement.innerHTML = `<div style="padding: 0.5rem 1.5rem; color: #ef4444; font-size: 0.8rem;">${data.error}</div>`;
+                parentElement.innerHTML = DOMPurify.sanitize(`<div style="padding: 0.5rem 1.5rem; color: #ef4444; font-size: 0.8rem;">${data.error}</div>`);
                 return;
             }
             
@@ -825,7 +825,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         window.currentEditingFile = item.path;
                         
                         tabFileViewer.style.display = "inline-block";
-                        tabFileViewer.innerHTML = `${item.name} <span id="save-file-btn" style="margin-left: 8px; color: #10b981; font-size: 0.9rem; cursor: pointer;" title="Save">💾</span> <span id="close-file-viewer-btn" style="margin-left: 8px; color: #ef4444; font-size: 0.8rem; cursor: pointer;" title="Close">✖</span>`;
+                        tabFileViewer.innerHTML = DOMPurify.sanitize(`${item.name}`) + ` <span id="save-file-btn" style="margin-left: 8px; color: #10b981; font-size: 0.9rem; cursor: pointer;" title="Save">💾</span> <span id="close-file-viewer-btn" style="margin-left: 8px; color: #ef4444; font-size: 0.8rem; cursor: pointer;" title="Close">✖</span>`;
                         tabFileViewer.click();
                         
                         viewerContent.value = "Loading...";
@@ -1302,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             const loadingInd = streamContainer.parentElement.querySelector('.llm-loading-indicator');
                             if (loadingInd) loadingInd.style.display = "none";
                             
-                            streamContainer.innerHTML += data.token.replace(/\n/g, '<br>').replace(/```/g, '<hr>');
+                            streamContainer.innerHTML += DOMPurify.sanitize(data.token.replace(/\n/g, '<br>').replace(/```/g, '<hr>'));
                             const agentContextOutput = document.getElementById("agent-context-output");
                             if (agentContextOutput) agentContextOutput.scrollTop = agentContextOutput.scrollHeight;
                         }
@@ -1469,7 +1469,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble";
         
-        bubble.innerHTML = renderMarkdownWithThink(text);
+        bubble.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(renderMarkdownWithThink(text)) : renderMarkdownWithThink(text);
         div.appendChild(bubble);
         chatMessages.appendChild(div);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -1533,7 +1533,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     assistantBuffer += data.text;
                 }
                 
-                currentAssistantBubble.innerHTML = renderMarkdownWithThink(assistantBuffer);
+                currentAssistantBubble.innerHTML = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(renderMarkdownWithThink(assistantBuffer)) : renderMarkdownWithThink(assistantBuffer);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
             } else if (data.type === "usage") {
@@ -1544,7 +1544,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (data.type === "done") {
                 chatWs.close();
             } else if (data.type === "error") {
-                currentAssistantBubble.innerHTML += `<br><span style="color:#ef4444">Error: ${data.text}</span>`;
+                currentAssistantBubble.innerHTML += DOMPurify.sanitize(`<br><span style="color:#ef4444">Error: ${data.text}</span>`);
                 chatWs.close();
             }
         };

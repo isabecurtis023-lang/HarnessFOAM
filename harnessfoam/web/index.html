@@ -13,7 +13,7 @@
     <div class="app-container">
         <!-- Sidebar / Input Area -->
         <aside class="control-panel" id="control-panel">
-            <button id="toggle-cp-btn" class="toggle-cp-btn" title="Collapse Panel">◀</button>
+            <button id="toggle-cp-btn" class="toggle-cp-btn" title="Collapse Panel" aria-label="Collapse panel">◀</button>
             <header style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <img src="/static/harnessfoam-horse.png" alt="HarnessFOAM running horse logo" class="brand-logo">
@@ -24,12 +24,12 @@
             </header>
             <div class="input-group">
                 <label for="prompt">Simulation Requirement</label>
-                <textarea id="prompt" placeholder="e.g. Simulate incompressible flow over a circular cylinder at 2 m/s...">Simulate a 2D lid-driven cavity flow. The top wall moves at 1 m/s in the x-direction. The domain is a 0.1m x 0.1m square.</textarea>
+                <textarea id="prompt" placeholder="Describe the CFD simulation you want to run (e.g. Simulate a 2D lid-driven cavity flow...)"></textarea>
             </div>
             
             <div class="input-group">
                 <label for="post_prompt">Post-Processing Requirement (Optional)</label>
-                <textarea id="post_prompt" placeholder="e.g. Plot the velocity magnitude and save as PNG..." style="height: 60px;">Plot the velocity magnitude and save as PNG.</textarea>
+                <textarea id="post_prompt" placeholder="e.g. Plot the velocity magnitude and save as PNG..." style="height: 60px;"></textarea>
             </div>
             
             <div class="input-group">
@@ -84,7 +84,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h2>Model API Settings</h2>
-                    <span class="close-modal">&times;</span>
+                    <span class="close-modal" role="button" tabindex="0" aria-label="Close modal">&times;</span>
                 </div>
                 <div class="modal-body">
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Override the local `.env` variables for this session.</p>
@@ -129,7 +129,7 @@
             <aside class="file-explorer" id="file-explorer" style="display: flex;">
             <div class="explorer-header">
                 <h3>Project Files</h3>
-                <button id="refresh-files-btn" class="icon-btn" title="Refresh folder">🔄</button>
+                <button id="refresh-files-btn" class="icon-btn" title="Refresh folder" aria-label="Refresh folder">🔄</button>
             </div>
             <div class="optimization-card">
                 <div class="optimization-title">Parameter Optimization</div>

@@ -2,6 +2,9 @@ import os
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import logging
+logger = logging.getLogger(__name__)
+
 
 router = APIRouter()
 
@@ -54,7 +57,7 @@ print(folder_path, end="")
         folder_path = result.stdout.strip()
     except Exception as e:
         folder_path = ""
-        print(f"Error opening folder dialog: {e}")
+        logger.info(f"Error opening folder dialog: {e}")
         
     return {"path": folder_path}
 
@@ -83,13 +86,6 @@ async def get_models(api_base: str = "", api_key: str = ""):
     except Exception as e:
         return {"models": [], "error": str(e)}
 
-def safe_join(base_dir: str, requested_path: str) -> str:
-    import os
-    base_dir = os.path.abspath(base_dir)
-    target_path = os.path.abspath(os.path.join(base_dir, requested_path.strip("/\\")))
-    if not target_path.startswith(base_dir):
-        raise ValueError("Directory traversal attempt blocked")
-    return target_path
 
 @router.get("/api/files")
 def list_files(path: str = ""):
