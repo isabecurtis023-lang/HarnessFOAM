@@ -127,10 +127,6 @@
         
         <!-- File Explorer Sidebar -->
             <aside class="file-explorer" id="file-explorer" style="display: flex;">
-            <div class="explorer-header">
-                <h3>Project Files</h3>
-                <button id="refresh-files-btn" class="icon-btn" title="Refresh folder" aria-label="Refresh folder">🔄</button>
-            </div>
             <div class="optimization-card">
                 <div class="optimization-title">Parameter Optimization</div>
                 <input id="opt-param-path" type="text" value="system/controlDict" placeholder="Dictionary path">
@@ -179,6 +175,10 @@
                         <input type="text" id="hpc_workdir" value="~/harnessfoam_runs" style="font-size: 0.85rem; padding: 0.4rem; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 4px;">
                     </div>
                 </div>
+            </div>
+            <div class="explorer-header">
+                <h3>Project Files</h3>
+                <button id="refresh-files-btn" class="icon-btn" title="Refresh folder" aria-label="Refresh folder">🔄</button>
             </div>
             <div class="explorer-body">
                 <ul id="file-tree" class="file-tree">
