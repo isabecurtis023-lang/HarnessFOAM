@@ -249,56 +249,45 @@ def runner_node(state: SimulationState) -> SimulationState:
             state['status'] = 'FAILED'
             state['logs']['execution_error'] = stdout_str[-2000:]
             logger.info(f"Runner Agent failed with code {returncode}")
+        else:
+            # Deduce solver name for physics validation
+            solver_name = "icoFoam"
+            import re
+            cd_path = os.path.join(state['case_dir'], "system", "controlDict")
+            if os.path.exists(cd_path):
+                try:
+                    with open(cd_path, "r", encoding="utf-8") as f:
+                        match = re.search(r"application\s+(\w+);", f.read())
+                        if match:
+                            solver_name = match.group(1)
+                except Exception:
+                    pass
+            
+            runtime_ok, metrics, metric_errors = validate_runtime(stdout_str, expected_version="13")
+            state['logs']['runtime_metrics'] = metrics
+            physics_ok, physics_metrics, physics_errors = validate_physics(
+                state['case_dir'], state.get('prompt', ''), solver_name
+            )
+            state['logs']['physics_metrics'] = physics_metrics
+            benchmark_ok, benchmark_metrics, benchmark_errors = evaluate_reference_case(
+                state.get('prompt', ''), metrics, physics_metrics
+            )
+            state['logs']['benchmark_metrics'] = benchmark_metrics
+            if not physics_ok:
+                metric_errors.extend(physics_errors)
+            if not benchmark_ok:
+                metric_errors.extend([f"Reference benchmark: {error}" for error in benchmark_errors])
+            if runtime_ok:
+                state['status'] = 'SUCCESS' if not metric_errors else 'FAILED'
             else:
-                # Deduce solver name for physics validation
-                solver_name = "icoFoam"
-                import re
-                cd_path = os.path.join(state['case_dir'], "system", "controlDict")
-                if os.path.exists(cd_path):
-                    try:
-                        with open(cd_path, "r", encoding="utf-8") as f:
-                            match = re.search(r"application\s+(\w+);", f.read())
-                            if match:
-                                solver_name = match.group(1)
-                    except Exception:
-                        pass
-                
-                runtime_ok, metrics, metric_errors = validate_runtime(stdout_str, expected_version="13")
-                state['logs']['runtime_metrics'] = metrics
-                physics_ok, physics_metrics, physics_errors = validate_physics(
-                    state['case_dir'], state.get('prompt', ''), solver_name
-                )
-                state['logs']['physics_metrics'] = physics_metrics
-                benchmark_ok, benchmark_metrics, benchmark_errors = evaluate_reference_case(
-                    state.get('prompt', ''), metrics, physics_metrics
-                )
-                state['logs']['benchmark_metrics'] = benchmark_metrics
-                if not physics_ok:
-                    metric_errors.extend(physics_errors)
-                if not benchmark_ok:
-                    metric_errors.extend([f"Reference benchmark: {error}" for error in benchmark_errors])
-                if runtime_ok:
-                    state['status'] = 'SUCCESS' if not metric_errors else 'FAILED'
-                else:
-                    state['status'] = 'FAILED'
-                    state['logs']['execution_error'] = "Runtime validation failed:\n" + "\n".join(metric_errors)
-        except Exception as e:
-            state['status'] = 'FAILED'
-            state['logs']['run_stderr'] = str(e)
-            state['logs']['execution_error'] = str(e)
-            logger.info(f"Runner Agent execution exception: {e}")
-            
-    else:
-        with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
-            f.write(slurm_script)
-            
-        try:
-            os.chmod(allrun_path, 0o755)
-        except Exception: 
-            pass
+                state['status'] = 'FAILED'
+                state['logs']['execution_error'] = "Runtime validation failed:\n" + "\n".join(metric_errors)
+    except Exception as e:
+        state['status'] = 'FAILED'
+        state['logs']['run_stderr'] = str(e)
+        state['logs']['execution_error'] = str(e)
+        logger.info(f"Runner Agent execution exception: {e}")
         
-        state['status'] = 'SUCCESS'
-    
     return state
 
 def reviewer_node(state: SimulationState) -> SimulationState:
