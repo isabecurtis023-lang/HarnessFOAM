@@ -21,6 +21,10 @@ class SimulationState(TypedDict, total=False):
     logs: Dict[str, Any]
     errors: int
     max_errors: int
+    validation_errors: list[str]
+    auto_postprocess: bool
+    target_env: str
+    hpc_config: Optional[Dict[str, Any]]
     current_step: str
     image_base64: Optional[str]
     llm_kwargs: Optional[Dict[str, Any]]  # Runtime API overrides passed from server
@@ -174,46 +178,77 @@ def runner_node(state: SimulationState) -> SimulationState:
     logger.info(f"Runner Agent: Generating run script...")
     state['run_job_id'] = f"run_{state['case_id']}_{int(time.time())}"
     
-    llm_kwargs = state.get('llm_kwargs') or {}
-    slurm_script = generate_hpc_script(state['prompt'], llm_kwargs=llm_kwargs,
-                                       memory_context=prompt_context(state.get('case_dir'), 'runner', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
-    state['logs']['slurm_script'] = slurm_script
-    
     import os
     allrun_path = os.path.join(state['case_dir'], "Allrun")
+    target_env = state.get('target_env', 'local')
     
-    is_hpc = any(x in state['prompt'].lower() for x in ["hpc", "slurm", "cluster"])
-    
-    if not is_hpc:
-        local_script = generate_local_script(state['case_dir'])
-        with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
-            f.write(local_script)
-            
-        try:
-            os.chmod(allrun_path, 0o755)
-        except Exception: 
-            pass
-        
-        # Try to extract the websocket from llm_kwargs callbacks to stream logs
-        websocket = None
-        loop = None
-        try:
-            callbacks = state.get('llm_kwargs', {}).get('callbacks', [])
-            if callbacks:
-                websocket = getattr(callbacks[0], 'websocket', None)
-                loop = getattr(callbacks[0], 'loop', None)
-        except Exception as e:
-            logger.info(f"[Runner Debug] Exception extracting callbacks: {e}")
+    # Extract websocket for log streaming
+    websocket = None
+    loop = None
+    try:
+        callbacks = state.get('llm_kwargs', {}).get('callbacks', [])
+        if callbacks:
+            websocket = getattr(callbacks[0], 'websocket', None)
+            loop = getattr(callbacks[0], 'loop', None)
+    except Exception as e:
+        logger.info(f"[Runner Debug] Exception extracting callbacks: {e}")
 
-        try:
+    try:
+        if target_env == "hpc" and state.get("hpc_config"):
+            # HPC / Slurm Execution
+            from harnessfoam.core.hpc import AsyncHPCClient
+            from harnessfoam.core.schemas import HPCConfig
+            
+            # 1. Generate Slurm script
+            llm_kwargs = state.get('llm_kwargs') or {}
+            slurm_script = generate_hpc_script(state['prompt'], llm_kwargs=llm_kwargs,
+                                            memory_context=prompt_context(state.get('case_dir'), 'runner', enabled=bool(state.get('memory_enabled')), limits=state.get('memory_limits') or {}))
+            state['logs']['slurm_script'] = slurm_script
+            
+            slurm_path = os.path.join(state['case_dir'], "Allrun.slurm")
+            with open(slurm_path, "w", newline="\n", encoding="utf-8") as f:
+                f.write(slurm_script)
+            
+            hpc_cfg = HPCConfig(**state["hpc_config"])
+            hpc_client = AsyncHPCClient(hpc_cfg)
+            
+            # Execute asynchronously but block LangGraph thread
+            async def run_hpc():
+                remote_dir = await hpc_client.upload_case(state['case_dir'], state['case_id'])
+                job_id = await hpc_client.submit_job(remote_dir, "Allrun.slurm")
+                returncode = await hpc_client.stream_logs(job_id, remote_dir, websocket=websocket, loop=loop)
+                await hpc_client.download_results(remote_dir, state['case_dir'])
+                return returncode
+            
+            # Run the async hpc function in the existing loop, or new loop if necessary
+            if loop and loop.is_running():
+                future = asyncio.run_coroutine_threadsafe(run_hpc(), loop)
+                returncode = future.result() # This blocks the thread, which is fine for LangGraph
+            else:
+                returncode = asyncio.run(run_hpc())
+                
+            stdout_str = "HPC Run Complete"
+            stderr_str = ""
+            
+        else:
+            # Local Execution
+            local_script = generate_local_script(state['case_dir'])
+            with open(allrun_path, "w", newline="\n", encoding="utf-8") as f:
+                f.write(local_script)
+                
+            try:
+                os.chmod(allrun_path, 0o755)
+            except Exception: 
+                pass
+                
             returncode, stdout_str, stderr_str = execute_local_simulation(state['case_dir'], websocket=websocket, loop=loop)
             
-            state['logs']['run_stdout'] = stdout_str
-            state['logs']['run_stderr'] = stderr_str
-            if returncode != 0:
-                state['status'] = 'FAILED'
-                state['logs']['execution_error'] = stdout_str[-2000:]
-                logger.info(f"Runner Agent failed with code {returncode}")
+        state['logs']['run_stdout'] = stdout_str
+        state['logs']['run_stderr'] = stderr_str
+        if returncode != 0:
+            state['status'] = 'FAILED'
+            state['logs']['execution_error'] = stdout_str[-2000:]
+            logger.info(f"Runner Agent failed with code {returncode}")
             else:
                 # Deduce solver name for physics validation
                 solver_name = "icoFoam"

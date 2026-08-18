@@ -461,6 +461,9 @@ echo "Simulation complete!"
         await websocket.send_json({"type": "info", "message": "<br>--- Starting Initial Run ---"})
         await websocket.send_json({"type": "step", "agent": "Architect Agent", "message": "Planning file structure and dependencies..."})
         
+        target_env = data.get("target_env", "local")
+        hpc_config = data.get("hpc_config")
+
         workflow = create_workflow()
         initial_state = SimulationState(
             user_requirement=prompt,
@@ -468,6 +471,8 @@ echo "Simulation complete!"
             case_dir=output_dir,
             llm_kwargs=llm_kwargs,
             max_errors=max_loops,
+            target_env=target_env,
+            hpc_config=hpc_config,
             memory_enabled=memory_enabled,
             memory_limits=memory_limits,
             # Deep Driving includes the visualizer stage automatically.

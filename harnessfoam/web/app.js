@@ -992,8 +992,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const modelName = document.getElementById("model_name").value.trim();
         const apiKey = document.getElementById("api_key").value.trim();
         const maxLoops = document.getElementById("max_loops") ? parseInt(document.getElementById("max_loops").value.trim()) || 3 : 3;
+        
         const memoryEnabled = document.getElementById("memory-enabled")?.checked || false;
         const memoryLimits = Object.fromEntries(Array.from(document.querySelectorAll("[data-memory-agent]")).map(input => [input.dataset.memoryAgent, parseInt(input.value, 10) || 2000]));
+        
+        let targetEnv = "local";
+        const envRadios = document.querySelectorAll('input[name="target_env"]');
+        envRadios.forEach(r => { if(r.checked) targetEnv = r.value; });
+        
+        let hpcConfig = null;
+        if(targetEnv === "hpc") {
+            hpcConfig = {
+                host: document.getElementById("hpc_host")?.value.trim() || "",
+                username: document.getElementById("hpc_username")?.value.trim() || "",
+                port: parseInt(document.getElementById("hpc_port")?.value) || 22,
+                identity_file: document.getElementById("hpc_key")?.value.trim() || "~/.ssh/id_rsa",
+                remote_workdir: document.getElementById("hpc_workdir")?.value.trim() || "~/harnessfoam_runs"
+            };
+        }
+
         
         ws.onopen = () => {
             connectionDot.classList.add("connected");
@@ -1008,7 +1025,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 api_key: apiKey,
                 max_loops: maxLoops,
                 memory_enabled: memoryEnabled,
-                memory_limits: memoryLimits
+                memory_limits: memoryLimits,
+                target_env: targetEnv,
+                hpc_config: hpcConfig
             }));
         };
         

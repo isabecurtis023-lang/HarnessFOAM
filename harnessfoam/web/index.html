@@ -40,6 +40,43 @@
                 </div>
             </div>
             
+            <div class="input-group">
+                <label>Compute Target</label>
+                <div style="display: flex; gap: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                        <input type="radio" name="target_env" value="local" checked> Local WSL
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.2rem; cursor: pointer;">
+                        <input type="radio" name="target_env" value="hpc"> Remote HPC / Slurm
+                    </label>
+                </div>
+                
+                <div id="hpc-config-panel" style="display: none; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem;">
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="hpc_host" style="font-size: 0.8rem;">SSH Host</label>
+                        <input type="text" id="hpc_host" placeholder="e.g. login.cluster.edu" style="font-size: 0.85rem; padding: 0.4rem;">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div style="flex: 2;">
+                            <label for="hpc_username" style="font-size: 0.8rem;">Username</label>
+                            <input type="text" id="hpc_username" placeholder="e.g. user1" style="font-size: 0.85rem; padding: 0.4rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="hpc_port" style="font-size: 0.8rem;">Port</label>
+                            <input type="number" id="hpc_port" value="22" style="font-size: 0.85rem; padding: 0.4rem;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <label for="hpc_key" style="font-size: 0.8rem;">Identity File (Private Key)</label>
+                        <input type="text" id="hpc_key" value="~/.ssh/id_rsa" style="font-size: 0.85rem; padding: 0.4rem;">
+                    </div>
+                    <div>
+                        <label for="hpc_workdir" style="font-size: 0.8rem;">Remote Working Directory</label>
+                        <input type="text" id="hpc_workdir" value="~/harnessfoam_runs" style="font-size: 0.85rem; padding: 0.4rem;">
+                    </div>
+                </div>
+            </div>
+            
             <div class="action-grid">
                 <!-- 2026-08-15 – Gemini 3.5 Flash: Stack buttons vertically, always show Run OpenFOAM -->
                 <button id="run-btn" class="primary-btn">Deep driving</button>
