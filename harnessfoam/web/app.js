@@ -403,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (err) {
                 console.error("Failed to browse folder:", err);
-                alert("Failed to open folder browser. Please ensure:\n1. You accessed the page via " + window.location.origin (not by opening the HTML file directly).\n2. The HarnessFOAM backend server is running in the terminal.");
+                alert("Failed to open folder browser. Please ensure:\n1. You accessed the page via " + window.location.origin + " (not by opening the HTML file directly).\n2. The HarnessFOAM backend server is running in the terminal.");
             } finally {
                 browseBtn.textContent = originalText;
             }
