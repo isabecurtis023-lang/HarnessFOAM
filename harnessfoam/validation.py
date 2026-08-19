@@ -91,6 +91,36 @@ def parse_runtime_metrics(log: str) -> Dict[str, object]:
         "has_end_marker": bool(re.search(r"(?:\nEnd\s*$|Simulation complete!\s*$)", log or "", re.M)),
     }
 
+def parse_physics_diagnostics(log: str) -> Dict[str, object]:
+    """Parse log for specific numerical divergence markers."""
+    diag = {
+        "floating_point_exception": bool(re.search(r"Floating point exception|FPE", log or "", re.I)),
+        "bounding_k": bool(re.search(r"bounding k,", log or "")),
+        "bounding_epsilon": bool(re.search(r"bounding epsilon,", log or "")),
+        "bounding_omega": bool(re.search(r"bounding omega,", log or "")),
+        "continuity_divergence": False,
+        "residual_divergence": False,
+        "courant_explosion": False
+    }
+    
+    # Check if continuity errors grow exponentially
+    continuity = [float(value) for value in re.findall(r"global\s*=\s*([0-9.eE+-]+)", log or "")]
+    if len(continuity) > 10 and max(continuity[-5:]) > 1e3:
+        diag["continuity_divergence"] = True
+        
+    # Check if Courant number explodes
+    courant = [float(maximum) for mean, maximum in re.findall(r"Courant Number mean:\s*([0-9.eE+-]+)\s+max:\s*([0-9.eE+-]+)", log or "")]
+    if courant and max(courant) > 100.0:
+        diag["courant_explosion"] = True
+        
+    # Check initial residual divergence (first residual starts growing instead of dropping)
+    initial_residuals = [float(value) for value in re.findall(r"Initial residual\s*=\s*([0-9.eE+-]+)", log or "")]
+    if len(initial_residuals) > 20 and max(initial_residuals[-10:]) > 1.0:
+        diag["residual_divergence"] = True
+        
+    return diag
+
+
 
 def validate_runtime(log: str, expected_version: str = "", max_courant: float = 1.0) -> Tuple[bool, Dict[str, object], List[str]]:
     metrics = parse_runtime_metrics(log)

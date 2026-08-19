@@ -245,6 +245,11 @@ def runner_node(state: SimulationState) -> SimulationState:
             
         state['logs']['run_stdout'] = stdout_str
         state['logs']['run_stderr'] = stderr_str
+        
+        from harnessfoam.validation import parse_physics_diagnostics
+        diagnostics = parse_physics_diagnostics(stdout_str)
+        state['logs']['physics_diagnostics'] = diagnostics
+        
         if returncode != 0:
             state['status'] = 'FAILED'
             state['logs']['execution_error'] = stdout_str[-2000:]
@@ -376,6 +381,29 @@ def visualizer_node(state: SimulationState) -> SimulationState:
     state['viz_job_id'] = f"viz_{state['case_id']}_{int(time.time())}"
     return state
 
+
+from harnessfoam.agents.physics_autopilot import run_physics_autopilot
+
+def physics_autopilot_node(state: SimulationState) -> SimulationState:
+    state['current_step'] = 'physics_autopilot'
+    logger.info("Physics Autopilot Agent: Analyzing divergence...")
+    state['errors'] += 1
+    
+    error_log = state['logs'].get('execution_error', '')
+    if not error_log:
+        error_log = state['logs'].get('run_stdout', '')
+        
+    result = run_physics_autopilot(state['case_dir'], error_log)
+    state['logs']['physics_autopilot_status'] = result['status']
+    state['logs']['physics_autopilot_reasoning'] = result['reasoning']
+    
+    if result['status'] == 'APPLIED':
+        state['status'] = 'RETRY' # Custom status to indicate it should be retried from input_writer or runner
+    else:
+        state['status'] = 'FAILED'
+        
+    return state
+
 def end_node(state: SimulationState) -> SimulationState:
     state['current_step'] = 'end'
     if state.get('memory_enabled') and state.get('case_dir'):
@@ -388,10 +416,26 @@ def end_node(state: SimulationState) -> SimulationState:
 
 def should_review(state: SimulationState) -> str:
     if state['status'] == 'FAILED' and state['errors'] < state['max_errors']:
+        diag = state.get('logs', {}).get('physics_diagnostics', {})
+        is_physics_divergence = (
+            diag.get('floating_point_exception') or
+            diag.get('bounding_k') or diag.get('bounding_epsilon') or diag.get('bounding_omega') or
+            diag.get('continuity_divergence') or
+            diag.get('residual_divergence') or
+            diag.get('courant_explosion')
+        )
+        if is_physics_divergence:
+            logger.info("Divergence detected, routing to physics autopilot...")
+            return "physics_autopilot"
         return "review"
     elif state['status'] == 'FAILED':
         return "fail"
     return "visualize"
+    
+def route_after_physics_autopilot(state: SimulationState) -> str:
+    # Usually we can just rerun preflight/runner directly since it patches files in place
+    return "preflight"
+
 
 def route_after_review(state: SimulationState) -> str:
     suggestions = state['logs'].get('review_suggestions', [])
@@ -415,6 +459,7 @@ def create_workflow() -> StateGraph:
     workflow.add_node("runner", runner_node)
     workflow.add_node("preflight", preflight_node)
     workflow.add_node("reviewer", reviewer_node)
+    workflow.add_node("physics_autopilot", physics_autopilot_node)
     workflow.add_node("visualizer", visualizer_node)
     workflow.add_node("end", end_node)
     
@@ -425,7 +470,8 @@ def create_workflow() -> StateGraph:
     workflow.add_conditional_edges(
         "preflight",
         route_after_preflight,
-        {"review": "reviewer", "run": "runner"}
+        {"review": "reviewer",
+            "physics_autopilot": "physics_autopilot", "run": "runner"}
     )
     
     workflow.add_conditional_edges(
@@ -433,6 +479,7 @@ def create_workflow() -> StateGraph:
         should_review,
         {
             "review": "reviewer",
+            "physics_autopilot": "physics_autopilot",
             "visualize": "visualizer",
             "fail": "end"
         }
@@ -445,7 +492,9 @@ def create_workflow() -> StateGraph:
             "input_writer": "input_writer"
         }
     )
-    workflow.add_conditional_edges("visualizer", route_after_visualizer, {"review": "reviewer", "end": "end"})
+    workflow.add_conditional_edges("visualizer", route_after_visualizer, {"review": "reviewer",
+            "physics_autopilot": "physics_autopilot", "end": "end"})
+    workflow.add_edge("physics_autopilot", "preflight")
     workflow.add_edge("end", END)
     
     return workflow.compile()
