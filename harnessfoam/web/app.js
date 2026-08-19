@@ -412,6 +412,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // File Explorer Logic
     const fileExplorer = document.getElementById("file-explorer");
+
+    // Add Ctrl+S support for saving files
+    const fileViewerContent = document.getElementById("file-viewer-content");
+    if (fileViewerContent) {
+        fileViewerContent.addEventListener("keydown", function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+                e.preventDefault();
+                const saveBtn = document.getElementById("save-file-btn");
+                if (saveBtn) {
+                    saveBtn.click();
+                }
+            }
+        });
+    }
+
     const fileTree = document.getElementById("file-tree");
     const refreshFilesBtn = document.getElementById("refresh-files-btn");
     const sidebarResizer = document.getElementById("sidebar-resizer");
