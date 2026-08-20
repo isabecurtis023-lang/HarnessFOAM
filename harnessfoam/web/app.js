@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const postprocessBtn = document.getElementById("postprocess-btn");
     const runOpenfoamBtn = document.getElementById("run-openfoam-btn");
     const optimizeBtn = document.getElementById("optimize-btn");
+    const agentOptimizeBtn = document.getElementById("agent-optimize-btn");
     const interfaceMatrixBtn = document.getElementById("interface-matrix-btn");
     const interfaceMatrixResult = document.getElementById("interface-matrix-result");
     const repairPreviewBtn = document.getElementById("assistant-repair-preview");
@@ -66,6 +67,56 @@ document.addEventListener("DOMContentLoaded", () => {
     if (repairPreviewBtn) repairPreviewBtn.addEventListener("click", () => assistantRepair(false, false));
     if (repairApplyBtn) repairApplyBtn.addEventListener("click", () => assistantRepair(true, false));
     if (repairRunBtn) repairRunBtn.addEventListener("click", () => assistantRepair(true, true));
+
+
+    if (agentOptimizeBtn) {
+        agentOptimizeBtn.addEventListener("click", async () => {
+            const baseCase = outputDirInput && outputDirInput.value.trim();
+            const userObjective = document.getElementById("opt-agent-objective").value.trim();
+            if (!baseCase || !userObjective) {
+                appendLog('<span class="error">AI Optimization requires a case directory and a natural language objective.</span>');
+                return;
+            }
+            
+            agentOptimizeBtn.disabled = true;
+            agentOptimizeBtn.textContent = "AI Agent Thinking...";
+            appendLog(`<span class="info">OptMetaOpenFOAM: Planning intelligent parameter sweep for '${userObjective}'...</span>`);
+            
+            try {
+                const response = await fetch('/api/agent_optimize', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        base_case: baseCase,
+                        output_root: `${baseCase}/opt_agent_runs`,
+                        user_objective: userObjective
+                    })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || result.error || `HTTP ${response.status}`);
+                
+                if (result.agent_plan) {
+                    appendLog(`<span class="info" style="color:#8b5cf6">Agent Sweep Plan: ${JSON.stringify(result.agent_plan)}</span>`);
+                }
+                
+                const evaluation = result.evaluation || {};
+                appendLog(`<span class="info" style="color:#10b981">AI Optimization complete: ${evaluation.passed ?? 0}/${evaluation.total ?? 0} passed.</span>`);
+                
+                if (result.best) {
+                    appendLog(`<span class="info">Best case: <strong>${result.best.case_dir}</strong> parameters=${JSON.stringify(result.best.parameters)} objective=${result.best.objective}</span>`);
+                }
+                
+                if (result.agent_reasoning) {
+                    appendLog(`<span class="info" style="color:#8b5cf6; font-style:italic">Agent Reasoning: ${result.agent_reasoning}</span>`);
+                }
+            } catch (error) {
+                appendLog(`<span class="error">AI Optimization failed: ${error.message}</span>`);
+            } finally {
+                agentOptimizeBtn.disabled = false;
+                agentOptimizeBtn.textContent = "Run Intelligent Sweep";
+            }
+        });
+    }
 
     if (optimizeBtn) {
         optimizeBtn.addEventListener("click", async () => {

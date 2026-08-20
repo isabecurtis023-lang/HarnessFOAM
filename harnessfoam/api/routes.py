@@ -23,6 +23,12 @@ class SimulationRequest(BaseModel):
     prompt: str
     output_dir: str = "demo_run_web"
 
+
+class AgentOptimizationRequest(BaseModel):
+    base_case: str
+    output_root: str
+    user_objective: str
+
 class OptimizationRequest(BaseModel):
     base_case: str
     output_root: str
@@ -419,6 +425,13 @@ def knowledge_status():
     """Expose the local RAG corpus state to the Web UI and diagnostics."""
     from harnessfoam.knowledge import official_tutorial_stats
     return official_tutorial_stats()
+
+
+@router.post("/api/agent_optimize")
+def agent_optimize_case(req: AgentOptimizationRequest):
+    """Run an intelligent, LLM-driven parameter sweep based on natural language."""
+    from harnessfoam.agents.optimizer import run_agentic_optimization
+    return run_agentic_optimization(req.base_case, req.output_root, req.user_objective)
 
 @router.post("/api/optimize")
 def optimize_case(req: OptimizationRequest):

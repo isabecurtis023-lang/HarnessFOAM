@@ -137,6 +137,13 @@
                     <select id="opt-direction"><option value="max">Maximize</option><option value="min">Minimize</option></select>
                 </div>
                 <button id="optimize-btn" class="secondary-btn">Run parameter sweep</button>
+                
+                <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0; padding-top: 0.5rem;">
+                    <div class="optimization-title" style="font-size: 0.8rem;">✨ AI Auto-Optimize</div>
+                    <textarea id="opt-agent-objective" placeholder="e.g. Find the maximum deltaT that keeps Courant below 1.0" rows="2" style="width: 100%; border-radius: 4px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--text-color); padding: 0.4rem; resize: vertical;"></textarea>
+                    <button id="agent-optimize-btn" class="secondary-btn" style="margin-top: 0.3rem;">Run Intelligent Sweep</button>
+                </div>
+
                 <button id="interface-matrix-btn" class="secondary-btn">Check CLI / Web / MCP</button>
                 <pre id="interface-matrix-result" class="assistant-repair-result">Interface matrix not checked.</pre>
             </div>
