@@ -23,6 +23,14 @@ async def run_parameter_optimization(base_case: str, output_root: str, parameter
     return json.dumps(result, ensure_ascii=False)
 
 @mcp.tool()
+async def run_agentic_optimization(base_case: str, output_root: str, user_objective: str) -> str:
+    """Run an intelligent, LLM-driven parameter sweep based on natural language."""
+    import json
+    from harnessfoam.agents.optimizer import run_agentic_optimization as agent_opt
+    result = agent_opt(base_case, output_root, user_objective)
+    return json.dumps(result, ensure_ascii=False)
+
+@mcp.tool()
 async def run_cavity_benchmark(output_dir: str = "tmp_mcp_cavity") -> str:
     """Run the deterministic OpenFOAM 13 cavity smoke benchmark."""
     import json
